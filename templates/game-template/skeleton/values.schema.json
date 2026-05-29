@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "nameOverride": { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "gameProfile": {
+      "type": "object",
+      "properties": {
+        "nameOverride": { "type": "string" }
+      }
+    },
+    "game": {
+      "type": "object",
+      "properties": {
+        "image": { "type": "string" },
+        "imagePullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] },
+        "ports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "containerPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+              "protocol": { "type": "string", "enum": ["TCP", "UDP"] }
+            },
+            "required": ["name", "containerPort"]
+          }
+        },
+        "env": { "type": "object" },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "requests": {
+              "type": "object",
+              "properties": {
+                "cpu": { "type": "string" },
+                "memory": { "type": "string" }
+              }
+            },
+            "limits": {
+              "type": "object",
+              "properties": {
+                "cpu": { "type": "string" },
+                "memory": { "type": "string" }
+              }
+            }
+          }
+        },
+        "storage": {
+          "type": "object",
+          "properties": {
+            "size": { "type": "string" },
+            "storageClass": { "type": "string" },
+            "mountPath": { "type": "string" }
+          }
+        },
+        "agent": {
+          "type": "object",
+          "properties": {
+            "image": { "type": "string" },
+            "version": { "type": "string" },
+            "resources": { "type": "object" }
+          }
+        },
+        "actions": { "type": "array" },
+        "capabilities": { "type": "object" }
+      },
+      "required": ["image", "ports", "resources", "storage", "agent"]
+    },
+    "fleet": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "replicas": { "type": "integer", "minimum": 0 },
+        "updateStrategy": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["RollingUpdate", "OnDelete"] },
+            "rollingUpdate": {
+              "type": "object",
+              "properties": {
+                "maxUnavailable": { "type": "integer", "minimum": 0 },
+                "maxSurge": { "type": "integer", "minimum": 0 },
+                "drainTimeoutSeconds": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "networking": {
+      "type": "object",
+      "properties": {
+        "exposeMode": { "type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer", "HostPort"] }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "networkPolicy": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" }
+          }
+        },
+        "rcon": {
+          "type": "object",
+          "properties": {
+            "password": { "type": "string" },
+            "existingSecret": { "type": "string" }
+          }
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "properties": {
+        "serviceMonitor": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "interval": { "type": "string" },
+            "labels": { "type": "object" }
+          }
+        }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "create": { "type": "boolean" },
+        "name": { "type": "string" },
+        "annotations": { "type": "object" }
+      }
+    },
+    "library": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    }
+  }
+}

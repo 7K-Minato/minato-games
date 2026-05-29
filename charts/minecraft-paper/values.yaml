@@ -1,0 +1,183 @@
+# Default values for minecraft-paper.
+
+# -- Override the name of the chart
+nameOverride: ""
+# -- Override the full name of the release
+fullnameOverride: ""
+
+# GameProfile configuration
+# The GameProfile is cluster-scoped and defines the game type.
+gameProfile:
+  # -- Override the GameProfile name (defaults to release fullname)
+  nameOverride: ""
+
+# Game server configuration
+game:
+  # -- Game container image
+  image: itzg/minecraft-server:latest
+  imagePullPolicy: IfNotPresent
+
+  # -- Game ports
+  ports:
+    - name: game
+      containerPort: 25565
+      protocol: TCP
+    - name: rcon
+      containerPort: 25575
+      protocol: TCP
+
+  # -- Environment variables for the game server
+  env:
+    EULA: "true"
+    TYPE: "PAPER"
+    VERSION: "1.20.4"
+    MEMORY: "2G"
+    ENABLE_RCON: "true"
+    RCON_PORT: "25575"
+    # RCON_PASSWORD is set from security.rcon.password or security.rcon.existingSecret
+
+  # -- Resource requirements
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+  # -- Storage configuration
+  storage:
+    size: 20Gi
+    storageClass: ""
+    mountPath: /data
+
+  # -- Agent configuration
+  agent:
+    image: ghcr.io/7k-group/minato-agent-minecraft:v0.1.0
+    version: "0.1.0"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+  # -- Declared actions
+  actions:
+    - name: restart
+      description: "Gracefully restart the server"
+      concurrency: serialize
+      timeout: 5m
+    - name: save-world
+      description: "Save the game world"
+      concurrency: exclusive
+      timeout: 2m
+    - name: send-message
+      description: "Broadcast a message to all players"
+      concurrency: allow
+      timeout: 30s
+      params:
+        message:
+          type: string
+          required: true
+          description: "Message to broadcast"
+    - name: kick-player
+      description: "Kick a player from the server"
+      concurrency: allow
+      timeout: 30s
+      params:
+        player:
+          type: string
+          required: true
+        reason:
+          type: string
+          required: false
+    - name: op-player
+      description: "Give operator status to a player"
+      concurrency: allow
+      timeout: 30s
+      params:
+        player:
+          type: string
+          required: true
+    - name: deop-player
+      description: "Remove operator status from a player"
+      concurrency: allow
+      timeout: 30s
+      params:
+        player:
+          type: string
+          required: true
+    - name: whitelist-add
+      description: "Add a player to the whitelist"
+      concurrency: allow
+      timeout: 30s
+      params:
+        player:
+          type: string
+          required: true
+    - name: whitelist-remove
+      description: "Remove a player from the whitelist"
+      concurrency: allow
+      timeout: 30s
+      params:
+        player:
+          type: string
+          required: true
+
+  # -- Capabilities
+  capabilities:
+    files: true
+    sftp: true
+    backup: true
+    restoreFromSnapshot: true
+
+# Fleet configuration
+fleet:
+  # -- Enable GameServerFleet
+  enabled: false
+  # -- Number of GameServer replicas
+  replicas: 1
+  # -- Update strategy
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+      drainTimeoutSeconds: 300
+
+# Networking
+networking:
+  # -- Expose mode: ClusterIP, NodePort, LoadBalancer, or HostPort
+  exposeMode: ClusterIP
+
+# Security
+security:
+  # -- Enable NetworkPolicy
+  networkPolicy:
+    enabled: true
+  # -- RCON password configuration
+  rcon:
+    # -- RCON password (leave empty to auto-generate)
+    password: ""
+    # -- Use an existing secret instead of creating one
+    existingSecret: ""
+
+# Monitoring
+monitoring:
+  # -- Enable ServiceMonitor for Prometheus
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}
+
+# Service account
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Library chart (internal)
+library:
+  enabled: true

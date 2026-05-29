@@ -1,0 +1,139 @@
+# Default values for cs2.
+
+nameOverride: ""
+fullnameOverride: ""
+
+gameProfile:
+  nameOverride: ""
+
+game:
+  image: cm2network/cs2:latest
+  imagePullPolicy: IfNotPresent
+
+  ports:
+    - name: game
+      containerPort: 27015
+      protocol: UDP
+    - name: rcon
+      containerPort: 27015
+      protocol: TCP
+
+  env:
+    SRCDS_TOKEN: ""
+    SRCDS_RCONPW: ""
+    SRCDS_PW: ""
+    SRCDS_MAXPLAYERS: "64"
+    SRCDS_TICKRATE: "128"
+    SRCDS_STARTMAP: "de_dust2"
+    SRCDS_GAMETYPE: "0"
+    SRCDS_GAMEMODE: "1"
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 4Gi
+    limits:
+      cpu: 4
+      memory: 8Gi
+
+  storage:
+    size: 50Gi
+    storageClass: ""
+    mountPath: /home/steam/cs2-dedicated
+
+  agent:
+    image: ghcr.io/7k-group/minato-agent-cs2:v0.1.0
+    version: "0.1.0"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+  actions:
+    - name: restart
+      description: "Restart the CS2 server"
+      concurrency: serialize
+      timeout: 5m
+    - name: change-map
+      description: "Change the current map"
+      concurrency: allow
+      timeout: 30s
+      params:
+        map:
+          type: string
+          required: true
+          description: "Map name (e.g., de_dust2)"
+    - name: kick-player
+      description: "Kick a player by Steam ID"
+      concurrency: allow
+      timeout: 30s
+      params:
+        steamId:
+          type: string
+          required: true
+        reason:
+          type: string
+          required: false
+    - name: ban-player
+      description: "Ban a player by Steam ID"
+      concurrency: allow
+      timeout: 30s
+      params:
+        steamId:
+          type: string
+          required: true
+        duration:
+          type: string
+          required: false
+          description: "Ban duration (e.g., 1h, 1d, permanent)"
+    - name: say
+      description: "Broadcast a server message"
+      concurrency: allow
+      timeout: 30s
+      params:
+        message:
+          type: string
+          required: true
+
+  capabilities:
+    files: true
+    sftp: true
+    backup: true
+    restoreFromSnapshot: true
+
+fleet:
+  enabled: false
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+      drainTimeoutSeconds: 300
+
+networking:
+  exposeMode: ClusterIP
+
+security:
+  networkPolicy:
+    enabled: true
+  rcon:
+    password: ""
+    existingSecret: ""
+
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+library:
+  enabled: true

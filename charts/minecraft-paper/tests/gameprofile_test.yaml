@@ -1,0 +1,52 @@
+suite: gameprofile tests
+templates:
+  - gameprofile.yaml
+tests:
+  - it: should render GameProfile with correct name
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: GameProfile
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-minecraft-paper
+
+  - it: should use nameOverride when set
+    set:
+      gameProfile.nameOverride: my-mc
+    asserts:
+      - equal:
+          path: metadata.name
+          value: my-mc
+
+  - it: should include correct ports
+    asserts:
+      - equal:
+          path: spec.ports
+          value:
+            - name: game
+              containerPort: 25565
+              protocol: TCP
+            - name: rcon
+              containerPort: 25575
+              protocol: TCP
+
+  - it: should include agent configuration
+    asserts:
+      - equal:
+          path: spec.agent.image
+          value: ghcr.io/7k-group/minato-agent-minecraft:v0.1.0
+      - equal:
+          path: spec.agent.version
+          value: "0.1.0"
+
+  - it: should include capabilities
+    asserts:
+      - equal:
+          path: spec.capabilities
+          value:
+            files: true
+            sftp: true
+            backup: true
+            restoreFromSnapshot: true

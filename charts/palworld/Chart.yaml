@@ -1,0 +1,22 @@
+apiVersion: v2
+name: palworld
+description: Palworld dedicated server for Minato
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - palworld
+  - gameserver
+  - minato
+home: https://github.com/7k-group/minato-games
+sources:
+  - https://github.com/7k-group/minato-games
+  - https://github.com/7k-group/minato
+maintainers:
+  - name: 7K Group
+    email: dev@7kgroup.com
+dependencies:
+  - name: minato-games-library
+    version: "0.1.x"
+    repository: "oci://harbor.7kgroup.com/minato-games/charts"
+    condition: library.enabled

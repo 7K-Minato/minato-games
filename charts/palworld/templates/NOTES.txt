@@ -1,0 +1,37 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your Palworld server has been configured with Minato.
+
+{{- if .Values.fleet.enabled }}
+A GameServerFleet has been created with {{ .Values.fleet.replicas }} replica(s).
+{{- else }}
+A GameProfile has been created. To create a GameServer:
+
+  kubectl apply -f - <<EOF
+  apiVersion: operator.minato.io/v1
+  kind: GameServer
+  metadata:
+    name: {{ include "minato-games.fullname" . }}-server
+    namespace: {{ .Release.Namespace }}
+  spec:
+    profile: {{ include "minato-games.profileName" . }}
+    env:
+      PLAYERS: "32"
+  EOF
+{{- end }}
+
+GameProfile: {{ include "minato-games.profileName" . }}
+Namespace: {{ .Release.Namespace }}
+
+Check status:
+  kubectl get gameprofile {{ include "minato-games.profileName" . }}
+  kubectl get gameserverfleet -n {{ .Release.Namespace }}
+  kubectl get gameservers -n {{ .Release.Namespace }}
+
+{{- if .Values.security.rcon.password }}
+RCON password is stored in secret: {{ include "minato-games.fullname" . }}-rcon
+{{- else if .Values.security.rcon.existingSecret }}
+RCON password is stored in existing secret: {{ .Values.security.rcon.existingSecret }}
+{{- else }}
+WARNING: No RCON password configured. Set security.rcon.password or security.rcon.existingSecret.
+{{- end }}

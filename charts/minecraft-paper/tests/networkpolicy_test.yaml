@@ -1,0 +1,39 @@
+suite: networkpolicy tests
+templates:
+  - networkpolicy.yaml
+tests:
+  - it: should not render networkpolicy when disabled
+    set:
+      security.networkPolicy.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render networkpolicy when enabled
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: NetworkPolicy
+      - equal:
+          path: spec.policyTypes
+          value:
+            - Ingress
+            - Egress
+
+  - it: should allow game port ingress
+    asserts:
+      - contains:
+          path: spec.ingress
+          content:
+            from: []
+            ports:
+              - protocol: TCP
+                port: 25565
+
+  - it: should allow all egress
+    asserts:
+      - equal:
+          path: spec.egress
+          value:
+            - {}

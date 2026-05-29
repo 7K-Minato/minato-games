@@ -1,0 +1,41 @@
+{{- if .Values.fleet.enabled }}
+apiVersion: operator.minato.io/v1
+kind: GameServerFleet
+metadata:
+  name: {{ include "minato-games.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "minato-games.labels" . | nindent 4 }}
+spec:
+  profile: {{ include "minato-games.profileName" . }}
+  replicas: {{ .Values.fleet.replicas }}
+  template:
+    metadata:
+      labels:
+        {{- include "minato-games.selectorLabels" . | nindent 8 }}
+    spec:
+      env:
+        {{- range $key, $value := .Values.game.env }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        SRCDS_RCONPW: {{ include "minato-games.rconSecretName" . | quote }}
+      {{- if .Values.game.storage.size }}
+      storage:
+        size: {{ .Values.game.storage.size }}
+        {{- if .Values.game.storage.storageClass }}
+        storageClass: {{ .Values.game.storage.storageClass }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.networking.exposeMode }}
+      networking:
+        exposeMode: {{ .Values.networking.exposeMode }}
+      {{- end }}
+  updateStrategy:
+    type: {{ .Values.fleet.updateStrategy.type }}
+    {{- if eq .Values.fleet.updateStrategy.type "RollingUpdate" }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.fleet.updateStrategy.rollingUpdate.maxUnavailable }}
+      maxSurge: {{ .Values.fleet.updateStrategy.rollingUpdate.maxSurge }}
+      drainTimeoutSeconds: {{ .Values.fleet.updateStrategy.rollingUpdate.drainTimeoutSeconds }}
+    {{- end }}
+{{- end }}

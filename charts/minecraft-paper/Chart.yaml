@@ -1,0 +1,23 @@
+apiVersion: v2
+name: minecraft-paper
+description: Minecraft Paper server for Minato — persistent, scalable, production-ready
+type: application
+version: 0.1.0
+appVersion: "1.20.4"
+keywords:
+  - minecraft
+  - paper
+  - gameserver
+  - minato
+home: https://github.com/7k-group/minato-games
+sources:
+  - https://github.com/7k-group/minato-games
+  - https://github.com/7k-group/minato
+maintainers:
+  - name: 7K Group
+    email: dev@7kgroup.com
+dependencies:
+  - name: minato-games-library
+    version: "0.1.x"
+    repository: "oci://harbor.7kgroup.com/minato-games/charts"
+    condition: library.enabled

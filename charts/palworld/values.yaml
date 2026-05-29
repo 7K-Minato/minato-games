@@ -1,0 +1,131 @@
+# Default values for palworld.
+
+nameOverride: ""
+fullnameOverride: ""
+
+gameProfile:
+  nameOverride: ""
+
+game:
+  image: thijsvanloef/palworld-server-docker:latest
+  imagePullPolicy: IfNotPresent
+
+  ports:
+    - name: game
+      containerPort: 8211
+      protocol: UDP
+    - name: rcon
+      containerPort: 25575
+      protocol: TCP
+
+  env:
+    PLAYERS: "32"
+    PORT: "8211"
+    PUID: "1000"
+    PGID: "1000"
+    MULTITHREADING: "true"
+    COMMUNITY: "false"
+    UPDATE_ON_BOOT: "true"
+    RCON_ENABLED: "true"
+    RCON_PORT: "25575"
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 4Gi
+    limits:
+      cpu: 4
+      memory: 8Gi
+
+  storage:
+    size: 20Gi
+    storageClass: ""
+    mountPath: /palworld
+
+  agent:
+    image: ghcr.io/7k-group/minato-agent-palworld:v0.1.0
+    version: "0.1.0"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+  actions:
+    - name: restart
+      description: "Restart the Palworld server"
+      concurrency: serialize
+      timeout: 5m
+    - name: save-world
+      description: "Save the game world"
+      concurrency: exclusive
+      timeout: 2m
+    - name: broadcast
+      description: "Broadcast a message to all players"
+      concurrency: allow
+      timeout: 30s
+      params:
+        message:
+          type: string
+          required: true
+    - name: kick-player
+      description: "Kick a player from the server"
+      concurrency: allow
+      timeout: 30s
+      params:
+        player:
+          type: string
+          required: true
+        reason:
+          type: string
+          required: false
+    - name: ban-player
+      description: "Ban a player from the server"
+      concurrency: allow
+      timeout: 30s
+      params:
+        player:
+          type: string
+          required: true
+
+  capabilities:
+    files: true
+    sftp: true
+    backup: true
+    restoreFromSnapshot: true
+
+fleet:
+  enabled: false
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+      drainTimeoutSeconds: 300
+
+networking:
+  exposeMode: ClusterIP
+
+security:
+  networkPolicy:
+    enabled: true
+  rcon:
+    password: ""
+    existingSecret: ""
+
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+library:
+  enabled: true

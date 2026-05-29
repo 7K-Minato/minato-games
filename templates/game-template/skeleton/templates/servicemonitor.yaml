@@ -1,0 +1,20 @@
+{{- if and .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "minato-games.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "minato-games.labels" . | nindent 4 }}
+    {{- range $key, $value := .Values.monitoring.serviceMonitor.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      minato.io/profile: {{ include "minato-games.profileName" . }}
+  endpoints:
+    - port: agent-metrics
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+      path: /metrics
+{{- end }}

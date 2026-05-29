@@ -1,0 +1,72 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      library--release_created: ${{ steps.release.outputs['charts/_library--release_created'] }}
+      library--tag_name: ${{ steps.release.outputs['charts/_library--tag_name'] }}
+      library--version: ${{ steps.release.outputs['charts/_library--version'] }}
+      cs2--release_created: ${{ steps.release.outputs['charts/cs2--release_created'] }}
+      cs2--tag_name: ${{ steps.release.outputs['charts/cs2--tag_name'] }}
+      cs2--version: ${{ steps.release.outputs['charts/cs2--version'] }}
+      minecraft-paper--release_created: ${{ steps.release.outputs['charts/minecraft-paper--release_created'] }}
+      minecraft-paper--tag_name: ${{ steps.release.outputs['charts/minecraft-paper--tag_name'] }}
+      minecraft-paper--version: ${{ steps.release.outputs['charts/minecraft-paper--version'] }}
+      palworld--release_created: ${{ steps.release.outputs['charts/palworld--release_created'] }}
+      palworld--tag_name: ${{ steps.release.outputs['charts/palworld--tag_name'] }}
+      palworld--version: ${{ steps.release.outputs['charts/palworld--version'] }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  prepare-publish:
+    needs: release-please
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - id: matrix
+        run: |
+          matrix='{"include":[]}'
+          
+          if [ "${{ needs.release-please.outputs.library--release_created }}" == "true" ]; then
+            matrix=$(echo "$matrix" | jq '.include += [{"chart":"_library","path":"charts/_library","version":"${{ needs.release-please.outputs.library--version }}"}]')
+          fi
+          
+          if [ "${{ needs.release-please.outputs.cs2--release_created }}" == "true" ]; then
+            matrix=$(echo "$matrix" | jq '.include += [{"chart":"cs2","path":"charts/cs2","version":"${{ needs.release-please.outputs.cs2--version }}"}]')
+          fi
+          
+          if [ "${{ needs.release-please.outputs.minecraft-paper--release_created }}" == "true" ]; then
+            matrix=$(echo "$matrix" | jq '.include += [{"chart":"minecraft-paper","path":"charts/minecraft-paper","version":"${{ needs.release-please.outputs.minecraft-paper--version }}"}]')
+          fi
+          
+          if [ "${{ needs.release-please.outputs.palworld--release_created }}" == "true" ]; then
+            matrix=$(echo "$matrix" | jq '.include += [{"chart":"palworld","path":"charts/palworld","version":"${{ needs.release-please.outputs.palworld--version }}"}]')
+          fi
+          
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Publish matrix: $matrix"
+
+  publish:
+    needs: prepare-publish
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare-publish.outputs.matrix) }}
+    uses: 7K-Hiroba/workflows-library/.github/workflows/release-helm.yml@v1
+    secrets: inherit
+    with:
+      path: ${{ matrix.path }}
+      version: ${{ matrix.version }}

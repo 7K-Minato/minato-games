@@ -1,0 +1,32 @@
+suite: fleet tests
+templates:
+  - fleet.yaml
+tests:
+  - it: should not render fleet when disabled
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render fleet when enabled
+    set:
+      fleet.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: GameServerFleet
+      - equal:
+          path: spec.profile
+          value: RELEASE-NAME-${{ values.gameName }}
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should use custom replica count
+    set:
+      fleet.enabled: true
+      fleet.replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3

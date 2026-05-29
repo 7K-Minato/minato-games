@@ -1,0 +1,77 @@
+apiVersion: operator.minato.io/v1
+kind: GameProfile
+metadata:
+  name: {{ include "minato-games.profileName" . }}
+  labels:
+    {{- include "minato-games.labels" . | nindent 4 }}
+spec:
+  displayName: "Palworld"
+  image: {{ .Values.game.image | quote }}
+  imagePullPolicy: {{ .Values.game.imagePullPolicy }}
+  ports:
+    {{- range .Values.game.ports }}
+    - name: {{ .name }}
+      containerPort: {{ .containerPort }}
+      protocol: {{ .protocol }}
+    {{- end }}
+  environment:
+    - key: PLAYERS
+      default: "32"
+      required: false
+    - key: PORT
+      default: "8211"
+      required: false
+    - key: PUID
+      default: "1000"
+      required: false
+    - key: PGID
+      default: "1000"
+      required: false
+    - key: MULTITHREADING
+      default: "true"
+      required: false
+    - key: COMMUNITY
+      default: "false"
+      required: false
+    - key: UPDATE_ON_BOOT
+      default: "true"
+      required: false
+    - key: RCON_ENABLED
+      default: "true"
+      required: false
+    - key: RCON_PORT
+      default: "25575"
+      required: false
+  resources:
+    {{- toYaml .Values.game.resources | nindent 4 }}
+  storage:
+    mountPath: {{ .Values.game.storage.mountPath | quote }}
+    sizeDefault: {{ .Values.game.storage.size | quote }}
+    {{- if .Values.game.storage.storageClass }}
+    storageClassDefault: {{ .Values.game.storage.storageClass | quote }}
+    {{- end }}
+  agent:
+    image: {{ .Values.game.agent.image | quote }}
+    version: {{ .Values.game.agent.version | quote }}
+    resources:
+      {{- toYaml .Values.game.agent.resources | nindent 6 }}
+  actions:
+    {{- range .Values.game.actions }}
+    - name: {{ .name }}
+      description: {{ .description | quote }}
+      concurrency: {{ .concurrency }}
+      timeout: {{ .timeout }}
+      {{- if .params }}
+      params:
+        {{- range $key, $val := .params }}
+        {{ $key }}:
+          type: {{ $val.type }}
+          required: {{ $val.required }}
+          {{- if $val.description }}
+          description: {{ $val.description | quote }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  capabilities:
+    {{- toYaml .Values.game.capabilities | nindent 4 }}

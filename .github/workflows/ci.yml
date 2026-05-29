@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  lint-pr-title:
+    if: github.event_name == 'pull_request'
+    uses: 7K-Hiroba/workflows-library/.github/workflows/ci-lint-pr-title.yml@v1
+
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      games: ${{ steps.discover.outputs.games }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: discover
+        run: |
+          games=$(find charts -maxdepth 1 -mindepth 1 -type d ! -name '_*' -printf '%f\n' | jq -R -s -c 'split("\n")[:-1]')
+          echo "games=$games" >> "$GITHUB_OUTPUT"
+          echo "Discovered games: $games"
+
+  library:
+    uses: 7K-Hiroba/workflows-library/.github/workflows/ci-helm-library.yml@v1
+    with:
+      path: charts/_library
+
+  games:
+    needs: discover
+    strategy:
+      matrix:
+        game: ${{ fromJSON(needs.discover.outputs.games) }}
+    uses: 7K-Hiroba/workflows-library/.github/workflows/ci-helm.yml@v1
+    with:
+      path: charts/${{ matrix.game }}

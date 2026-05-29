@@ -1,0 +1,292 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: minato-game-template
+  title: Minato Game Chart
+  description: Scaffold a new game server Helm chart for the Minato platform
+  tags:
+    - helm
+    - gameserver
+    - minato
+spec:
+  owner: 7k-group
+  type: service
+
+  parameters:
+    - title: Game Information
+      required:
+        - gameName
+        - displayName
+        - description
+        - gameImage
+      properties:
+        gameName:
+          title: Game Name
+          type: string
+          description: Short kebab-case name for the chart (e.g., minecraft-paper, cs2, palworld)
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+          ui:autofocus: true
+
+        displayName:
+          title: Display Name
+          type: string
+          description: Human-readable game name (e.g., "Minecraft Paper")
+
+        description:
+          title: Description
+          type: string
+          description: Brief description of the game server
+
+        gameImage:
+          title: Game Container Image
+          type: string
+          description: Docker image for the game server (e.g., itzg/minecraft-server:latest)
+
+        appVersion:
+          title: App Version
+          type: string
+          description: Application version (e.g., 1.20.4, latest)
+          default: latest
+
+    - title: Game Configuration
+      properties:
+        ports:
+          title: Game Ports
+          type: array
+          description: Ports exposed by the game server
+          default:
+            - name: game
+              containerPort: 25565
+              protocol: TCP
+          items:
+            type: object
+            required:
+              - name
+              - containerPort
+            properties:
+              name:
+                type: string
+              containerPort:
+                type: integer
+                minimum: 1
+                maximum: 65535
+              protocol:
+                type: string
+                enum: [TCP, UDP]
+                default: TCP
+
+        storageSize:
+          title: Storage Size
+          type: string
+          description: Persistent storage size
+          default: 20Gi
+
+        storageMountPath:
+          title: Storage Mount Path
+          type: string
+          description: Path where game data is mounted
+          default: /data
+
+        defaultEnv:
+          title: Default Environment Variables
+          type: object
+          description: Key-value pairs for default environment variables
+          default:
+            EULA: "true"
+
+        agentImage:
+          title: Minato Agent Image
+          type: string
+          description: Minato agent sidecar image
+          default: ghcr.io/7k-group/minato-agent-generic:v0.1.0
+
+        agentVersion:
+          title: Agent Version
+          type: string
+          default: "0.1.0"
+
+        actions:
+          title: Declared Actions
+          type: array
+          description: Actions that can be performed on the game server
+          default:
+            - name: restart
+              description: "Restart the server"
+              concurrency: serialize
+              timeout: 5m
+          items:
+            type: object
+            required:
+              - name
+              - description
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              concurrency:
+                type: string
+                enum: [serialize, exclusive, allow]
+                default: allow
+              timeout:
+                type: string
+                default: 5m
+              params:
+                type: object
+                description: Action parameters
+
+        capabilities:
+          title: Capabilities
+          type: object
+          default:
+            files: true
+            sftp: true
+            backup: true
+            restoreFromSnapshot: true
+          properties:
+            files:
+              type: boolean
+              default: true
+            sftp:
+              type: boolean
+              default: true
+            backup:
+              type: boolean
+              default: true
+            restoreFromSnapshot:
+              type: boolean
+              default: true
+
+    - title: Repository Settings
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+            allowedOwners:
+              - 7k-group
+
+  steps:
+    - id: fetch-template
+      name: Fetch Template Skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        targetPath: charts/${{ parameters.gameName }}
+        values:
+          gameName: ${{ parameters.gameName }}
+          displayName: ${{ parameters.displayName }}
+          description: ${{ parameters.description }}
+          gameImage: ${{ parameters.gameImage }}
+          appVersion: ${{ parameters.appVersion }}
+          ports: ${{ parameters.ports }}
+          storageSize: ${{ parameters.storageSize }}
+          storageMountPath: ${{ parameters.storageMountPath }}
+          defaultEnv: ${{ parameters.defaultEnv }}
+          agentImage: ${{ parameters.agentImage }}
+          agentVersion: ${{ parameters.agentVersion }}
+          actions: ${{ parameters.actions }}
+          capabilities: ${{ parameters.capabilities }}
+
+    - id: read-chart-yaml
+      name: Read Chart.yaml
+      action: fs:read
+      input:
+        path: charts/${{ parameters.gameName }}/Chart.yaml
+
+    - id: update-release-please
+      name: Update Release Please Config
+      action: fs:read
+      input:
+        path: release-please-config.json
+
+    - id: update-manifest
+      name: Update Release Please Manifest
+      action: fs:read
+      input:
+        path: .release-please-manifest.json
+
+    - id: patch-config
+      name: Patch Release Please Config
+      action: roadiehq:utils:jsonata:transform
+      input:
+        path: release-please-config.json
+        expression: |
+          $merge([$, {
+            "packages": $merge([$.packages, {
+              "charts/${{ parameters.gameName }}": {
+                "component": "${{ parameters.gameName }}",
+                "release-type": "helm",
+                "include-component-in-tag": true,
+                "changelog-path": "CHANGELOG.md"
+              }
+            }])
+          }])
+
+    - id: write-config
+      name: Write Updated Config
+      action: fs:write
+      input:
+        path: release-please-config.json
+        content: ${{ steps.patch-config.output.result }}
+
+    - id: patch-manifest
+      name: Patch Release Please Manifest
+      action: roadiehq:utils:jsonata:transform
+      input:
+        path: .release-please-manifest.json
+        expression: |
+          $merge([$, {
+            "charts/${{ parameters.gameName }}": "0.1.0"
+          }])
+
+    - id: write-manifest
+      name: Write Updated Manifest
+      action: fs:write
+      input:
+        path: .release-please-manifest.json
+        content: ${{ steps.patch-manifest.output.result }}
+
+    - id: create-pr
+      name: Create Pull Request
+      action: publish:github:pull-request
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        branchName: feat/add-${{ parameters.gameName }}-chart
+        title: "feat(${{ parameters.gameName }}): add ${{ parameters.displayName }} game chart"
+        description: |
+          This PR adds a new game chart for ${{ parameters.displayName }}.
+
+          ## Changes
+          - Added `charts/${{ parameters.gameName }}/` with complete Helm chart
+          - Updated `release-please-config.json` to include new chart
+          - Updated `.release-please-manifest.json` with initial version
+
+          ## Game Details
+          - **Image**: `${{ parameters.gameImage }}`
+          - **Storage**: `${{ parameters.storageSize }}` at `${{ parameters.storageMountPath }}`
+          - **Ports**: ${{ parameters.ports | json }}
+
+          ## Next Steps
+          1. Review the generated chart
+          2. Customize `values.yaml` and templates as needed
+          3. Merge to trigger CI/CD
+        targetPath: .
+
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps.create-pr.output.remoteUrl }}
+      - title: Repository
+        url: ${{ parameters.repoUrl }}
+    text:
+      - title: Summary
+        content: |
+          Created PR for ${{ parameters.displayName }} game chart.
+
+          The chart is located at `charts/${{ parameters.gameName }}/`.

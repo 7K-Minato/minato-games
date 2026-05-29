@@ -1,0 +1,16 @@
+apiVersion: v2
+name: minato-games-library
+description: A Helm library chart providing shared templates for Minato game charts
+type: library
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - minato
+  - games
+  - library
+home: https://github.com/7k-group/minato-games
+sources:
+  - https://github.com/7k-group/minato-games
+maintainers:
+  - name: 7K Group
+    email: dev@7kgroup.com
