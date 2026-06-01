@@ -1,3 +1,50 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json"
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "labels": ["dependencies"],
+  "helm-values": {
+    "fileMatch": ["charts/.+/values\\.yaml$"]
+  },
+  "github-actions": {
+    "fileMatch": ["^\\.github/workflows/.+\\.ya?ml$"]
+  },
+  "packageRules": [
+    {
+      "description": "Group all minato agent images together",
+      "matchPackageNames": ["/ghcr\\.io/7k-group/minato-agent-.+/"],
+      "groupName": "minato-agents"
+    },
+    {
+      "description": "Group game server Docker images",
+      "matchPackageNames": [
+        "thijsvanloef/palworld-server-docker",
+        "itzg/minecraft-server",
+        "cm2network/cs2"
+      ],
+      "groupName": "game-server-images"
+    },
+    {
+      "description": "Group all Helm chart dependencies",
+      "matchManagers": ["helm-requirements"],
+      "groupName": "helm-dependencies"
+    },
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "Update Docker images in Helm values.yaml files",
+      "customType": "regex",
+      "fileMatch": ["charts/.+/values\\.yaml$"],
+      "matchStrings": [
+        "image:\\s+(?<depName>[^\\s:]+)(?::(?<currentValue>[^\\s]+))?"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ]
 }
