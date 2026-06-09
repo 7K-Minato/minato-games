@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	agentv1 "github.com/7k-group/minato/api/agent/v1/minato/agent/v1"
-	"github.com/7k-group/minato/sdk/agent/actions"
+	agentv1 "github.com/7k-minato/minato/api/agent/v1/minato/agent/v1"
+	"github.com/7k-minato/minato/sdk/agent/actions"
 )
 
 func TestGenericAgent_Info(t *testing.T) {

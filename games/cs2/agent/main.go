@@ -8,9 +8,9 @@ import (
 
 	"google.golang.org/protobuf/types/known/anypb"
 
-	agentv1 "github.com/7k-group/minato/api/agent/v1/minato/agent/v1"
-	"github.com/7k-group/minato/sdk/agent/rcon"
-	"github.com/7k-group/minato/sdk/agent/server"
+	agentv1 "github.com/7k-minato/minato/api/agent/v1/minato/agent/v1"
+	"github.com/7k-minato/minato/sdk/agent/rcon"
+	"github.com/7k-minato/minato/sdk/agent/server"
 )
 
 // cs2Agent implements the Minato agent interface for Counter-Strike 2.

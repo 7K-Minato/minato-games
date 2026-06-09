@@ -7,8 +7,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/anypb"
 
-	agentv1 "github.com/7k-group/minato/api/agent/v1/minato/agent/v1"
-	"github.com/7k-group/minato/sdk/agent/server"
+	agentv1 "github.com/7k-minato/minato/api/agent/v1/minato/agent/v1"
+	"github.com/7k-minato/minato/sdk/agent/server"
 )
 
 type ${{ values.gameName | replace("-", "") }}Agent struct {
