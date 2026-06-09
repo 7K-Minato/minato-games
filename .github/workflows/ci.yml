@@ -70,6 +70,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Download Go modules
+        run: go mod download
       - name: Build agent
         run: |
           echo "Building agent for ${{ matrix.game }}..."
