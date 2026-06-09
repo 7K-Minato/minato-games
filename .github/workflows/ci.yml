@@ -35,9 +35,28 @@ jobs:
     strategy:
       matrix:
         game: ${{ fromJSON(needs.discover.outputs.games) }}
-    uses: 7K-Hiroba/workflows-library/.github/workflows/ci-helm.yml@v1
-    with:
-      path: games/${{ matrix.game }}/chart
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+      - name: Install helm-unittest
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git
+      - name: Use local library dependency
+        run: |
+          sed -i 's|repository: "oci://harbor.7kgroup.com/minato-games/charts"|repository: "file://../../../charts/_library"|' games/${{ matrix.game }}/chart/Chart.yaml
+      - name: Remove packaged dependencies
+        run: |
+          rm -f games/${{ matrix.game }}/chart/Chart.lock
+          rm -f games/${{ matrix.game }}/chart/charts/minato-games-library-*.tgz
+      - name: Build dependencies
+        run: helm dependency build games/${{ matrix.game }}/chart
+      - name: Lint chart
+        run: helm lint games/${{ matrix.game }}/chart
+      - name: Test chart
+        run: helm unittest games/${{ matrix.game }}/chart
 
   agents:
     needs: discover
