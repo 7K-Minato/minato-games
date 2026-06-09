@@ -2,5 +2,6 @@
   "charts/_library": "0.1.0",
   "games/cs2": "0.1.0",
   "games/minecraft": "0.1.0",
-  "games/palworld": "0.1.0"
+  "games/palworld": "0.1.0",
+  "games/generic": "0.1.0"
 }

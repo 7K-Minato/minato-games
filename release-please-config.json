@@ -36,6 +36,15 @@
         "chart/Chart.yaml",
         "agent/main.go"
       ]
+    },
+    "games/generic": {
+      "component": "generic",
+      "release-type": "go",
+      "include-component-in-tag": true,
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "agent/main.go"
+      ]
     }
   },
   "separate-pull-requests": false,
