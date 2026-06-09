@@ -97,6 +97,35 @@ index: ## Generate Helm repo index.
 
 ##@ Agent Operations
 
+.PHONY: ci-agent
+ci-agent: ## Run all CI checks for a specific agent (GAME=minecraft).
+	@if [ -z "$(GAME)" ]; then \
+		echo "Usage: make ci-agent GAME=minecraft"; \
+		exit 1; \
+	fi
+	@echo "=== Running CI for agent-$(GAME) ==="
+	@echo "1. Downloading Go modules..."
+	go mod download
+	@echo "2. Building agent-$(GAME)..."
+	@mkdir -p bin
+	CGO_ENABLED=0 go build -ldflags='-s -w' -o bin/agent-$(GAME) ./$(GAMES_DIR)/$(GAME)/agent
+	@echo "3. Running go vet..."
+	go vet ./$(GAMES_DIR)/$(GAME)/agent/...
+	@echo "4. Running tests..."
+	go test ./$(GAMES_DIR)/$(GAME)/agent/...
+	@echo "5. Running golangci-lint..."
+	@which golangci-lint > /dev/null 2>&1 || (echo "    WARNING: golangci-lint not found. Install from https://golangci-lint.run/usage/install/" && exit 1)
+	golangci-lint run ./$(GAMES_DIR)/$(GAME)/agent/...
+	@echo "=== CI passed for agent-$(GAME) ==="
+
+.PHONY: ci-agents
+ci-agents: ## Run all CI checks for all agents.
+	@for game in $(GAMES); do \
+		if [ -d "$(GAMES_DIR)/$$game/agent" ]; then \
+			$(MAKE) ci-agent GAME=$$game || exit 1; \
+		fi \
+	done
+
 .PHONY: build-agents
 build-agents: ## Build all game agent binaries.
 	@mkdir -p bin
