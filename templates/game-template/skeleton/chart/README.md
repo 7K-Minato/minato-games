@@ -5,7 +5,7 @@ ${{ values.description }}
 ## Prerequisites
 
 - Kubernetes 1.28+ cluster
-- [Minato operator](https://github.com/7k-group/minato) installed
+- [Minato operator](https://github.com/7k-minato/minato) installed
 - Helm 3.12+
 
 ## Installation

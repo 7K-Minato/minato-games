@@ -9,10 +9,10 @@ keywords:
   - paper
   - gameserver
   - minato
-home: https://github.com/7k-group/minato-games
+home: https://github.com/7k-minato/minato-games
 sources:
-  - https://github.com/7k-group/minato-games
-  - https://github.com/7k-group/minato
+  - https://github.com/7k-minato/minato-games
+  - https://github.com/7k-minato/minato
 maintainers:
   - name: 7K Group
     email: dev@7kgroup.com

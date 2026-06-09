@@ -1,6 +1,6 @@
 # Minato Games
 
-Curated, production-ready game configurations for [Minato](https://github.com/7k-group/minato) — the Kubernetes-native platform for persistent, multi-game dedicated game servers.
+Curated, production-ready game configurations for [Minato](https://github.com/7k-minato/minato) — the Kubernetes-native platform for persistent, multi-game dedicated game servers.
 
 ## What is this?
 
@@ -13,7 +13,7 @@ Each game in this repository is organized under `games/<game-name>/` and contain
 ## Prerequisites
 
 - Kubernetes 1.28+ cluster
-- [Minato operator](https://github.com/7k-group/minato) installed (CRDs + operator + control plane)
+- [Minato operator](https://github.com/7k-minato/minato) installed (CRDs + operator + control plane)
 - Helm 3.12+ with OCI support
 
 ## Quick Start

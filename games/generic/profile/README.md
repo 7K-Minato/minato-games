@@ -5,7 +5,7 @@ This profile configures a game-agnostic agent using YAML-declared actions.
 ## Game Details
 
 - **Image**: `gcr.io/distroless/static:nonroot`
-- **Documentation**: https://github.com/7k-group/minato
+- **Documentation**: https://github.com/7k-minato/minato
 
 ## Agent
 
