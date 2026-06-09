@@ -30,6 +30,8 @@ tests:
             ports:
               - protocol: TCP
                 port: 25565
+              - protocol: TCP
+                port: 25575
 
   - it: should allow all egress
     asserts:
