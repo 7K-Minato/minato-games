@@ -1,7 +1,14 @@
 # Default values for generic.
 
+nameOverride: ""
+fullnameOverride: ""
+
+gameProfile:
+  nameOverride: ""
+
 # Game server configuration
 game:
+  displayName: "Generic Game Server"
   image: gcr.io/distroless/static:nonroot
   imagePullPolicy: IfNotPresent
   appVersion: latest
@@ -48,6 +55,7 @@ fleet:
     rollingUpdate:
       maxUnavailable: 1
       maxSurge: 1
+      drainTimeoutSeconds: 300
 
 # Networking
 networking:
@@ -57,12 +65,21 @@ networking:
 security:
   networkPolicy:
     enabled: true
+  rcon:
+    password: ""
+    existingSecret: ""
 
 # Monitoring
 monitoring:
   serviceMonitor:
     enabled: false
     interval: 30s
+    labels: {}
+
+# Service account
+serviceAccount:
+  create: false
+  name: ""
 
 # Library chart
 library:
