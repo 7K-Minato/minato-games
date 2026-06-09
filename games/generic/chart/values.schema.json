@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Generic Values",
+  "properties": {
+    "game": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "env": {
+          "type": "object"
+        },
+        "storage": {
+          "type": "object"
+        },
+        "resources": {
+          "type": "object"
+        },
+        "agent": {
+          "type": "object"
+        },
+        "ports": {
+          "type": "array"
+        }
+      }
+    },
+    "fleet": {
+      "type": "object"
+    },
+    "networking": {
+      "type": "object"
+    },
+    "security": {
+      "type": "object"
+    },
+    "monitoring": {
+      "type": "object"
+    }
+  }
+}

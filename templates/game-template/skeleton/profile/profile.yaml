@@ -1,0 +1,33 @@
+apiVersion: operator.minato.io/v1
+kind: GameProfile
+metadata:
+  name: ${{ values.gameName }}
+spec:
+  displayName: "${{ values.displayName }}"
+  description: "${{ values.description }}"
+  image: "${{ values.gameImage }}"
+  imagePullPolicy: IfNotPresent
+
+  agent:
+    image: "${{ values.agentImage }}"
+    version: "${{ values.agentVersion }}"
+
+  ports:
+${{ values.ports | dump | indent 4 }}
+
+  storage:
+    mountPath: "${{ values.storageMountPath }}"
+    sizeDefault: "${{ values.storageSize }}"
+    sizeMin: 1Gi
+    sizeMax: 100Gi
+    accessModes:
+      - ReadWriteOnce
+
+  capabilities:
+    files: ${{ values.capabilities.files }}
+    sftp: ${{ values.capabilities.sftp }}
+    backup: ${{ values.capabilities.backup }}
+    restoreFromSnapshot: ${{ values.capabilities.restoreFromSnapshot }}
+
+  actions:
+${{ values.actions | dump | indent 4 }}

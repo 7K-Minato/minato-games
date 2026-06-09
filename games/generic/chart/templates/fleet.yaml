@@ -1,0 +1,3 @@
+{{- if .Values.fleet.enabled }}
+{{- include "minato-games-library.fleet" . }}
+{{- end }}

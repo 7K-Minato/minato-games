@@ -1,0 +1,3 @@
+{{- if .Values.monitoring.serviceMonitor.enabled }}
+{{- include "minato-games-library.servicemonitor" . }}
+{{- end }}
