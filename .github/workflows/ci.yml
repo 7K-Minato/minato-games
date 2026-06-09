@@ -43,7 +43,7 @@ jobs:
         with:
           version: 'latest'
       - name: Install helm-unittest
-        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
       - name: Use local library dependency
         run: |
           sed -i 's|repository: "oci://harbor.7kgroup.com/minato-games/charts"|repository: "file://../../../charts/_library"|' games/${{ matrix.game }}/chart/Chart.yaml
