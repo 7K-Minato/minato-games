@@ -33,7 +33,7 @@ jobs:
       generic--tag_name: ${{ steps.release.outputs['games/generic--tag_name'] }}
       generic--version: ${{ steps.release.outputs['games/generic--version'] }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: googleapis/release-please-action@v5
         id: release
         with:
@@ -108,7 +108,7 @@ jobs:
     env:
       IMAGE: ${{ secrets.HARBOR_REGISTRY }}/${{ secrets.HARBOR_PROJECT }}/${{ matrix.image-name }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -163,7 +163,7 @@ jobs:
             "${IMAGE}@${DIGEST}"
 
       - name: Generate SBOM
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@v0.17.0
         with:
           image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
           format: spdx-json
