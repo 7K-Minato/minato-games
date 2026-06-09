@@ -41,7 +41,7 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
         with:
-          version: 'v3.14.0'
+          version: 'latest'
       - name: Install helm-unittest
         run: helm plugin install https://github.com/helm-unittest/helm-unittest.git
       - name: Use local library dependency
