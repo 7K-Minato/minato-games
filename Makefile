@@ -1,66 +1,130 @@
 # Makefile for Minato Games
 
+GAMES_DIR := games
+GAMES := $(notdir $(wildcard $(GAMES_DIR)/*))
 CHARTS_DIR := charts
-CHARTS := $(filter-out $(CHARTS_DIR)/_library $(CHARTS_DIR)/_template,$(wildcard $(CHARTS_DIR)/*))
 
 .PHONY: all
 all: lint test
 
+##@ Chart Operations
+
 .PHONY: lint
-lint:
-	@echo "Linting all charts..."
-	@for chart in $(CHARTS); do \
-		echo "  $$chart"; \
-		helm lint $$chart || exit 1; \
+lint: ## Lint all charts.
+	@echo "Linting library chart..."
+	helm lint $(CHARTS_DIR)/_library || exit 1
+	@echo "Linting game charts..."
+	@for game in $(GAMES); do \
+		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
+			echo "  $$game"; \
+			helm lint $(GAMES_DIR)/$$game/chart || exit 1; \
+		fi \
 	done
 
 .PHONY: test
-test:
-	@echo "Testing all charts..."
-	@for chart in $(CHARTS); do \
-		echo "  $$chart"; \
-		helm unittest $$chart || exit 1; \
+test: ## Test all charts.
+	@echo "Testing game charts..."
+	@for game in $(GAMES); do \
+		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
+			echo "  $$game"; \
+			helm unittest $(GAMES_DIR)/$$game/chart || exit 1; \
+		fi \
 	done
 
 .PHONY: test-chart
-test-chart:
-	@if [ -z "$(CHART)" ]; then \
-		echo "Usage: make test-chart CHART=minecraft-paper"; \
+test-chart: ## Test a specific chart (GAME=minecraft).
+	@if [ -z "$(GAME)" ]; then \
+		echo "Usage: make test-chart GAME=minecraft"; \
 		exit 1; \
 	fi
-	helm unittest $(CHARTS_DIR)/$(CHART)
+	helm unittest $(GAMES_DIR)/$(GAME)/chart
 
 .PHONY: template
-template:
-	@for chart in $(CHARTS); do \
-		echo "=== $$chart ==="; \
-		helm template test $$chart | head -50; \
-		echo; \
+template: ## Render templates for all game charts.
+	@for game in $(GAMES); do \
+		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
+			echo "=== $$game ==="; \
+			helm template test $(GAMES_DIR)/$$game/chart | head -50; \
+			echo; \
+		fi \
 	done
 
 .PHONY: package
-package:
+package: ## Package all charts.
 	@mkdir -p dist
-	@for chart in $(CHARTS); do \
-		echo "Packaging $$chart..."; \
-		helm package $$chart --destination dist/; \
+	@echo "Packaging library chart..."
+	helm package $(CHARTS_DIR)/_library --destination dist/
+	@for game in $(GAMES); do \
+		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
+			echo "Packaging $$game chart..."; \
+			helm package $(GAMES_DIR)/$$game/chart --destination dist/; \
+		fi \
 	done
 
 .PHONY: index
-index:
+index: ## Generate Helm repo index.
 	@helm repo index dist/ --url https://7k-group.github.io/minato-games
 
+##@ Agent Operations
+
+.PHONY: build-agents
+build-agents: ## Build all game agent binaries.
+	@mkdir -p bin
+	@for game in $(GAMES); do \
+		if [ -d "$(GAMES_DIR)/$$game/agent" ]; then \
+			echo "Building agent-$$game..."; \
+			CGO_ENABLED=0 go build -ldflags='-s -w' -o bin/agent-$$game ./$(GAMES_DIR)/$$game/agent || exit 1; \
+		fi \
+	done
+
+.PHONY: build-agent
+build-agent: ## Build a specific agent (GAME=minecraft).
+	@if [ -z "$(GAME)" ]; then \
+		echo "Usage: make build-agent GAME=minecraft"; \
+		exit 1; \
+	fi
+	@mkdir -p bin
+	CGO_ENABLED=0 go build -ldflags='-s -w' -o bin/agent-$(GAME) ./$(GAMES_DIR)/$(GAME)/agent
+
+.PHONY: vet-agents
+vet-agents: ## Run go vet on all agents.
+	@for game in $(GAMES); do \
+		if [ -d "$(GAMES_DIR)/$$game/agent" ]; then \
+			echo "Vetting agent-$$game..."; \
+			go vet ./$(GAMES_DIR)/$$game/agent/... || exit 1; \
+		fi \
+	done
+
+.PHONY: test-agents
+test-agents: ## Run tests for all agents.
+	@for game in $(GAMES); do \
+		if [ -d "$(GAMES_DIR)/$$game/agent" ]; then \
+			echo "Testing agent-$$game..."; \
+			go test ./$(GAMES_DIR)/$$game/agent/... || exit 1; \
+		fi \
+	done
+
+##@ Profile Operations
+
+.PHONY: validate-profiles
+validate-profiles: ## Validate all GameProfile YAMLs.
+	@for game in $(GAMES); do \
+		if [ -d "$(GAMES_DIR)/$$game/profile" ]; then \
+			echo "Validating $$game profiles..."; \
+			for f in $(GAMES_DIR)/$$game/profile/*.yaml; do \
+				python3 -c "import yaml; yaml.safe_load(open('$$f'))" || exit 1; \
+			done; \
+		fi \
+	done
+
+##@ Cleanup
+
 .PHONY: clean
-clean:
-	@rm -rf dist/
+clean: ## Remove dist/ and bin/ directories.
+	@rm -rf dist/ bin/
+
+##@ Help
 
 .PHONY: help
-help:
-	@echo "Available targets:"
-	@echo "  lint        - Lint all charts"
-	@echo "  test        - Run unit tests for all charts"
-	@echo "  test-chart  - Run unit tests for a specific chart (CHART=...)"
-	@echo "  template    - Render templates for all charts"
-	@echo "  package     - Package all charts"
-	@echo "  index       - Generate Helm repo index"
-	@echo "  clean       - Remove dist/ directory"
+help: ## Display this help.
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m\u003ctarget\u003e\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)

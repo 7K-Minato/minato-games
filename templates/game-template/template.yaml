@@ -2,12 +2,13 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: minato-game-template
-  title: Minato Game Chart
-  description: Scaffold a new game server Helm chart for the Minato platform
+  title: Minato Game
+  description: Scaffold a new game server for the Minato platform (chart, agent, and profile)
   tags:
     - helm
     - gameserver
     - minato
+    - go
 spec:
   owner: 7k-group
   type: service
@@ -23,14 +24,14 @@ spec:
         gameName:
           title: Game Name
           type: string
-          description: Short kebab-case name for the chart (e.g., minecraft-paper, cs2, palworld)
+          description: Short kebab-case name for the game (e.g., minecraft, cs2, palworld)
           pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
           ui:autofocus: true
 
         displayName:
           title: Display Name
           type: string
-          description: Human-readable game name (e.g., "Minecraft Paper")
+          description: Human-readable game name (e.g., "Minecraft")
 
         description:
           title: Description
@@ -98,7 +99,7 @@ spec:
           title: Minato Agent Image
           type: string
           description: Minato agent sidecar image
-          default: ghcr.io/7k-group/minato-agent-generic:v0.1.0
+          default: harbor.7kgroup.com/minato-games/minato-agent-generic:v0.1.0
 
         agentVersion:
           title: Agent Version
@@ -172,12 +173,12 @@ spec:
               - 7k-group
 
   steps:
-    - id: fetch-template
-      name: Fetch Template Skeleton
+    - id: fetch-chart-template
+      name: Fetch Chart Template
       action: fetch:template
       input:
         url: ./skeleton
-        targetPath: charts/${{ parameters.gameName }}
+        targetPath: games/${{ parameters.gameName }}/chart
         values:
           gameName: ${{ parameters.gameName }}
           displayName: ${{ parameters.displayName }}
@@ -193,11 +194,219 @@ spec:
           actions: ${{ parameters.actions }}
           capabilities: ${{ parameters.capabilities }}
 
+    - id: create-agent-main
+      name: Create Agent Main
+      action: fs:write
+      input:
+        path: games/${{ parameters.gameName }}/agent/main.go
+        content: |
+          package main
+
+          import (
+          	"context"
+          	"fmt"
+          	"os"
+
+          	"google.golang.org/protobuf/types/known/anypb"
+
+          	agentv1 "github.com/7k-group/minato/api/agent/v1/minato/agent/v1"
+          	"github.com/7k-group/minato/sdk/agent/server"
+          )
+
+          type ${{ parameters.gameName | replace("-", "") }}Agent struct {
+          	name    string
+          	version string
+          }
+
+          func main() {
+          	agent := &${{ parameters.gameName | replace("-", "") }}Agent{
+          		name:    "minato-${{ parameters.gameName }}",
+          		version: "0.1.0",
+          	}
+
+          	_, err := server.Serve(agent, server.Options{})
+          	if err != nil {
+          		panic(err)
+          	}
+
+          	select {}
+          }
+
+          func (a *${{ parameters.gameName | replace("-", "") }}Agent) Info(ctx context.Context, req *agentv1.InfoRequest) (*agentv1.InfoResponse, error) {
+          	actions := []*agentv1.ActionSchema{
+          		{Name: "restart", Description: "Restart the server", Params: map[string]*agentv1.ParamSchema{}},
+          	}
+
+          	return &agentv1.InfoResponse{
+          		Name:    a.name,
+          		Version: a.version,
+          		Actions: actions,
+          		Metrics: []*agentv1.MetricDescriptor{},
+          	}, nil
+          }
+
+          func (a *${{ parameters.gameName | replace("-", "") }}Agent) HealthCheck(ctx context.Context, req *agentv1.HealthRequest) (*agentv1.HealthResponse, error) {
+          	return &agentv1.HealthResponse{Ready: true, Message: "healthy"}, nil
+          }
+
+          func (a *${{ parameters.gameName | replace("-", "") }}Agent) PrepareShutdown(ctx context.Context, req *agentv1.ShutdownRequest) (*agentv1.ShutdownResponse, error) {
+          	return &agentv1.ShutdownResponse{Success: true}, nil
+          }
+
+          func (a *${{ parameters.gameName | replace("-", "") }}Agent) GetPlayers(ctx context.Context, req *agentv1.PlayersRequest) (*agentv1.PlayersResponse, error) {
+          	return &agentv1.PlayersResponse{Online: 0, Capacity: 32}, nil
+          }
+
+          func (a *${{ parameters.gameName | replace("-", "") }}Agent) ExecuteAction(ctx context.Context, req *agentv1.ExecuteActionRequest) (*agentv1.ExecuteActionResponse, error) {
+          	switch req.ActionName {
+          	case "restart":
+          		return &agentv1.ExecuteActionResponse{State: agentv1.ActionState_ACTION_STATE_SUCCEEDED}, nil
+          	default:
+          		return &agentv1.ExecuteActionResponse{State: agentv1.ActionState_ACTION_STATE_REJECTED, Error: "unknown action"}, nil
+          	}
+          }
+
+          func (a *${{ parameters.gameName | replace("-", "") }}Agent) Console(stream agentv1.Agent_ConsoleServer) error {
+          	for {
+          		msg, err := stream.Recv()
+          		if err != nil {
+          			return err
+          		}
+          		_ = stream.Send(&agentv1.ConsoleServerMessage{
+          			Payload: &agentv1.ConsoleServerMessage_Response{Response: &agentv1.ConsoleResponse{Response: "ok"}},
+          		})
+          	}
+          }
+
+    - id: create-agent-dockerfile
+      name: Create Agent Dockerfile
+      action: fs:write
+      input:
+        path: games/${{ parameters.gameName }}/agent/Dockerfile
+        content: |
+          # Build stage
+          FROM golang:1.26-alpine AS builder
+
+          WORKDIR /build
+          COPY go.mod go.sum ./
+          RUN go mod download
+
+          COPY games/${{ parameters.gameName }}/agent/ ./
+          RUN CGO_ENABLED=0 GOOS=linux go build -ldflags='-s -w' -o agent .
+
+          # Final stage
+          FROM gcr.io/distroless/static:nonroot
+
+          COPY --from=builder /build/agent /usr/local/bin/agent
+
+          USER nonroot:nonroot
+
+          EXPOSE 8080
+
+          ENTRYPOINT ["/usr/local/bin/agent"]
+
+    - id: create-profile
+      name: Create GameProfile
+      action: fs:write
+      input:
+        path: games/${{ parameters.gameName }}/profile/profile.yaml
+        content: |
+          apiVersion: operator.minato.io/v1
+          kind: GameProfile
+          metadata:
+            name: ${{ parameters.gameName }}
+          spec:
+            displayName: "${{ parameters.displayName }}"
+            description: "${{ parameters.description }}"
+            image: "${{ parameters.gameImage }}"
+            imagePullPolicy: IfNotPresent
+
+            agent:
+              image: "${{ parameters.agentImage }}"
+              version: "${{ parameters.agentVersion }}"
+
+            ports:
+              ${{ parameters.ports | json }}
+
+            storage:
+              mountPath: "${{ parameters.storageMountPath }}"
+              sizeDefault: "${{ parameters.storageSize }}"
+              sizeMin: 1Gi
+              sizeMax: 100Gi
+              accessModes:
+                - ReadWriteOnce
+
+            capabilities:
+              files: ${{ parameters.capabilities.files }}
+              sftp: ${{ parameters.capabilities.sftp }}
+              backup: ${{ parameters.capabilities.backup }}
+              restoreFromSnapshot: ${{ parameters.capabilities.restoreFromSnapshot }}
+
+            actions:
+              ${{ parameters.actions | json }}
+
+    - id: create-gameserver-example
+      name: Create GameServer Example
+      action: fs:write
+      input:
+        path: games/${{ parameters.gameName }}/profile/gameserver-example.yaml
+        content: |
+          apiVersion: operator.minato.io/v1
+          kind: GameServer
+          metadata:
+            name: ${{ parameters.gameName }}-server-1
+            namespace: default
+          spec:
+            profile: ${{ parameters.gameName }}
+            tier: medium
+            env:
+              ${{ parameters.defaultEnv | json }}
+
+    - id: create-profile-readme
+      name: Create Profile README
+      action: fs:write
+      input:
+        path: games/${{ parameters.gameName }}/profile/README.md
+        content: |
+          # ${{ parameters.displayName }} Profile
+
+          This profile configures a ${{ parameters.displayName }} dedicated server.
+
+          ## Game Details
+
+          - **Image**: `${{ parameters.gameImage }}`
+          - **Documentation**: TBD
+
+          ## Agent
+
+          - **Image**: `${{ parameters.agentImage }}`
+          - **Version**: `${{ parameters.agentVersion }}`
+
+          ## Configuration
+
+          The profile supports the following environment variables via `spec.env`:
+
+          ${{ parameters.defaultEnv | json }}
+
+          ## Storage
+
+          - **Default Size**: `${{ parameters.storageSize }}`
+          - **Mount Path**: `${{ parameters.storageMountPath }}`
+          - **Access Mode**: ReadWriteOnce
+
+          ## Ports
+
+          ${{ parameters.ports | json }}
+
+          ## Actions
+
+          ${{ parameters.actions | json }}
+
     - id: read-chart-yaml
       name: Read Chart.yaml
       action: fs:read
       input:
-        path: charts/${{ parameters.gameName }}/Chart.yaml
+        path: games/${{ parameters.gameName }}/chart/Chart.yaml
 
     - id: update-release-please
       name: Update Release Please Config
@@ -219,11 +428,15 @@ spec:
         expression: |
           $merge([$, {
             "packages": $merge([$.packages, {
-              "charts/${{ parameters.gameName }}": {
+              "games/${{ parameters.gameName }}": {
                 "component": "${{ parameters.gameName }}",
-                "release-type": "helm",
+                "release-type": "go",
                 "include-component-in-tag": true,
-                "changelog-path": "CHANGELOG.md"
+                "changelog-path": "CHANGELOG.md",
+                "extra-files": [
+                  "chart/Chart.yaml",
+                  "agent/main.go"
+                ]
               }
             }])
           }])
@@ -242,7 +455,7 @@ spec:
         path: .release-please-manifest.json
         expression: |
           $merge([$, {
-            "charts/${{ parameters.gameName }}": "0.1.0"
+            "games/${{ parameters.gameName }}": "0.1.0"
           }])
 
     - id: write-manifest
@@ -257,24 +470,28 @@ spec:
       action: publish:github:pull-request
       input:
         repoUrl: ${{ parameters.repoUrl }}
-        branchName: feat/add-${{ parameters.gameName }}-chart
-        title: "feat(${{ parameters.gameName }}): add ${{ parameters.displayName }} game chart"
+        branchName: feat/add-${{ parameters.gameName }}-game
+        title: "feat(${{ parameters.gameName }}): add ${{ parameters.displayName }} game"
         description: |
-          This PR adds a new game chart for ${{ parameters.displayName }}.
+          This PR adds a new game for ${{ parameters.displayName }}.
 
           ## Changes
-          - Added `charts/${{ parameters.gameName }}/` with complete Helm chart
-          - Updated `release-please-config.json` to include new chart
+          - Added `games/${{ parameters.gameName }}/` with:
+            - `chart/` - Helm chart for the game
+            - `agent/` - Minato agent implementation
+            - `profile/` - GameProfile and example GameServer
+          - Updated `release-please-config.json` to include new game
           - Updated `.release-please-manifest.json` with initial version
 
           ## Game Details
           - **Image**: `${{ parameters.gameImage }}`
           - **Storage**: `${{ parameters.storageSize }}` at `${{ parameters.storageMountPath }}`
           - **Ports**: ${{ parameters.ports | json }}
+          - **Agent**: `${{ parameters.agentImage }}`
 
           ## Next Steps
-          1. Review the generated chart
-          2. Customize `values.yaml` and templates as needed
+          1. Review the generated chart, agent, and profile
+          2. Implement game-specific agent logic in `games/${{ parameters.gameName }}/agent/main.go`
           3. Merge to trigger CI/CD
         targetPath: .
 
@@ -287,6 +504,9 @@ spec:
     text:
       - title: Summary
         content: |
-          Created PR for ${{ parameters.displayName }} game chart.
+          Created PR for ${{ parameters.displayName }} game.
 
-          The chart is located at `charts/${{ parameters.gameName }}/`.
+          The game is located at `games/${{ parameters.gameName }}/` with:
+          - Chart: `games/${{ parameters.gameName }}/chart/`
+          - Agent: `games/${{ parameters.gameName }}/agent/`
+          - Profile: `games/${{ parameters.gameName }}/profile/`

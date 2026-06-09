@@ -1,4 +1,4 @@
-# Default values for palworld.
+# Default values for cs2.
 
 nameOverride: ""
 fullnameOverride: ""
@@ -7,27 +7,26 @@ gameProfile:
   nameOverride: ""
 
 game:
-  image: thijsvanloef/palworld-server-docker:latest
+  image: cm2network/cs2:latest
   imagePullPolicy: IfNotPresent
 
   ports:
     - name: game
-      containerPort: 8211
+      containerPort: 27015
       protocol: UDP
     - name: rcon
-      containerPort: 25575
+      containerPort: 27015
       protocol: TCP
 
   env:
-    PLAYERS: "32"
-    PORT: "8211"
-    PUID: "1000"
-    PGID: "1000"
-    MULTITHREADING: "true"
-    COMMUNITY: "false"
-    UPDATE_ON_BOOT: "true"
-    RCON_ENABLED: "true"
-    RCON_PORT: "25575"
+    SRCDS_TOKEN: ""
+    SRCDS_RCONPW: ""
+    SRCDS_PW: ""
+    SRCDS_MAXPLAYERS: "64"
+    SRCDS_TICKRATE: "128"
+    SRCDS_STARTMAP: "de_dust2"
+    SRCDS_GAMETYPE: "0"
+    SRCDS_GAMEMODE: "1"
 
   resources:
     requests:
@@ -38,12 +37,12 @@ game:
       memory: 8Gi
 
   storage:
-    size: 20Gi
+    size: 50Gi
     storageClass: ""
-    mountPath: /palworld
+    mountPath: /home/steam/cs2-dedicated
 
   agent:
-    image: ghcr.io/7k-group/minato-agent-palworld:v0.1.0
+    image: harbor.7kgroup.com/minato-games/minato-agent-cs2:v0.1.0
     version: "0.1.0"
     resources:
       requests:
@@ -55,38 +54,47 @@ game:
 
   actions:
     - name: restart
-      description: "Restart the Palworld server"
+      description: "Restart the CS2 server"
       concurrency: serialize
       timeout: 5m
-    - name: save-world
-      description: "Save the game world"
-      concurrency: exclusive
-      timeout: 2m
-    - name: broadcast
-      description: "Broadcast a message to all players"
+    - name: change-map
+      description: "Change the current map"
       concurrency: allow
       timeout: 30s
       params:
-        message:
+        map:
           type: string
           required: true
+          description: "Map name (e.g., de_dust2)"
     - name: kick-player
-      description: "Kick a player from the server"
+      description: "Kick a player by Steam ID"
       concurrency: allow
       timeout: 30s
       params:
-        player:
+        steamId:
           type: string
           required: true
         reason:
           type: string
           required: false
     - name: ban-player
-      description: "Ban a player from the server"
+      description: "Ban a player by Steam ID"
       concurrency: allow
       timeout: 30s
       params:
-        player:
+        steamId:
+          type: string
+          required: true
+        duration:
+          type: string
+          required: false
+          description: "Ban duration (e.g., 1h, 1d, permanent)"
+    - name: say
+      description: "Broadcast a server message"
+      concurrency: allow
+      timeout: 30s
+      params:
+        message:
           type: string
           required: true
 
