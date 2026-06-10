@@ -51,7 +51,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       agents: ${{ steps.agents.outputs.matrix }}
-      charts: ${{ steps.charts.outputs.matrix }}
+      library--should_release: ${{ steps.library.outputs.should_release }}
+      library--version: ${{ steps.library.outputs.version }}
+      game-charts: ${{ steps.charts.outputs.matrix }}
     steps:
       - id: agents
         run: |
@@ -80,16 +82,29 @@ jobs:
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "Agent matrix: $matrix"
       
+      - id: library
+        run: |
+          if [ "${{ github.ref_name }}" != "main" ] || [ "${{ inputs.force-publish }}" == "true" ]; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "version=0.0.0-test" >> "$GITHUB_OUTPUT"
+          else
+            if [ "${{ needs.release-please.outputs.library--release_created }}" == "true" ]; then
+              echo "should_release=true" >> "$GITHUB_OUTPUT"
+              echo "version=${{ needs.release-please.outputs.library--version }}" >> "$GITHUB_OUTPUT"
+            else
+              echo "should_release=false" >> "$GITHUB_OUTPUT"
+              echo "version=" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+          echo "Library should_release: ${{ steps.library.outputs.should_release }}"
+          echo "Library version: ${{ steps.library.outputs.version }}"
+      
       - id: charts
         run: |
           if [ "${{ github.ref_name }}" != "main" ] || [ "${{ inputs.force-publish }}" == "true" ]; then
-            matrix='{"include":[{"chart":"_library","path":"charts/_library","version":"0.0.0-test"},{"chart":"cs2","path":"games/cs2/chart","version":"0.0.0-test"},{"chart":"minecraft","path":"games/minecraft/chart","version":"0.0.0-test"},{"chart":"palworld","path":"games/palworld/chart","version":"0.0.0-test"},{"chart":"generic","path":"games/generic/chart","version":"0.0.0-test"}]}'
+            matrix='{"include":[{"chart":"cs2","path":"games/cs2/chart","version":"0.0.0-test"},{"chart":"minecraft","path":"games/minecraft/chart","version":"0.0.0-test"},{"chart":"palworld","path":"games/palworld/chart","version":"0.0.0-test"},{"chart":"generic","path":"games/generic/chart","version":"0.0.0-test"}]}'
           else
             matrix='{"include":[]}'
-            
-            if [ "${{ needs.release-please.outputs.library--release_created }}" == "true" ]; then
-              matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"_library","path":"charts/_library","version":"${{ needs.release-please.outputs.library--version }}"}]')
-            fi
             
             if [ "${{ needs.release-please.outputs.cs2--release_created }}" == "true" ]; then
               matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"cs2","path":"games/cs2/chart","version":"${{ needs.release-please.outputs.cs2--version }}"}]')
@@ -109,7 +124,20 @@ jobs:
           fi
           
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-          echo "Chart matrix: $matrix"
+          echo "Game chart matrix: $matrix"
+
+  publish-library:
+    needs: prepare-matrix
+    if: ${{ needs.prepare-matrix.outputs.library--should_release == 'true' }}
+    uses: 7K-Hiroba/workflows-library/.github/workflows/release-helm.yml@v1
+    secrets:
+      HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
+      HARBOR_PROJECT: ${{ secrets.HARBOR_PROJECT }}
+      HARBOR_ROBOT_NAME: ${{ secrets.HARBOR_ROBOT_NAME }}
+      HARBOR_ROBOT_TOKEN: ${{ secrets.HARBOR_ROBOT_TOKEN }}
+    with:
+      path: charts/_library
+      version: ${{ needs.prepare-matrix.outputs.library--version }}
 
   publish-agents:
     needs: prepare-matrix
@@ -189,11 +217,11 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: cosign attest --yes --type spdxjson --predicate sbom.spdx.json "${IMAGE}@${DIGEST}"
 
-  publish-charts:
-    needs: prepare-matrix
-    if: ${{ needs.prepare-matrix.outputs.charts != '{"include":[]}' }}
+  publish-game-charts:
+    needs: [prepare-matrix, publish-library]
+    if: ${{ needs.prepare-matrix.outputs.game-charts != '{"include":[]}' }}
     strategy:
-      matrix: ${{ fromJSON(needs.prepare-matrix.outputs.charts) }}
+      matrix: ${{ fromJSON(needs.prepare-matrix.outputs.game-charts) }}
     uses: 7K-Hiroba/workflows-library/.github/workflows/release-helm.yml@v1
     secrets:
       HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
