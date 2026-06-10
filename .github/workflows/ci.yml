@@ -81,7 +81,7 @@ jobs:
       - name: Run tests
         run: go test ./games/${{ matrix.game }}/agent/...
       - name: Lint agent
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           version: v2.12
           working-directory: .
