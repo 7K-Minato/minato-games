@@ -2,7 +2,14 @@ name: CD
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/release-process]
+  workflow_dispatch:
+    inputs:
+      force-publish:
+        description: 'Force run publish jobs even if no release was created'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -48,22 +55,26 @@ jobs:
     steps:
       - id: agents
         run: |
-          matrix='{"include":[]}'
-          
-          if [ "${{ needs.release-please.outputs.cs2--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"game":"cs2","image-name":"minato-agent-cs2","version":"${{ needs.release-please.outputs.cs2--version }}"}]')
-          fi
-          
-          if [ "${{ needs.release-please.outputs.minecraft--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"game":"minecraft","image-name":"minato-agent-minecraft","version":"${{ needs.release-please.outputs.minecraft--version }}"}]')
-          fi
-          
-          if [ "${{ needs.release-please.outputs.palworld--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"game":"palworld","image-name":"minato-agent-palworld","version":"${{ needs.release-please.outputs.palworld--version }}"}]')
-          fi
-          
-          if [ "${{ needs.release-please.outputs.generic--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"game":"generic","image-name":"minato-agent-generic","version":"${{ needs.release-please.outputs.generic--version }}"}]')
+          if [ "${{ github.ref_name }}" != "main" ] || [ "${{ inputs.force-publish }}" == "true" ]; then
+            matrix='{"include":[{"game":"cs2","image-name":"minato-agent-cs2","version":"0.0.0-test"},{"game":"minecraft","image-name":"minato-agent-minecraft","version":"0.0.0-test"},{"game":"palworld","image-name":"minato-agent-palworld","version":"0.0.0-test"},{"game":"generic","image-name":"minato-agent-generic","version":"0.0.0-test"}]}'
+          else
+            matrix='{"include":[]}'
+            
+            if [ "${{ needs.release-please.outputs.cs2--release_created }}" == "true" ]; then
+              matrix=$(echo "$matrix" | jq -c '.include += [{"game":"cs2","image-name":"minato-agent-cs2","version":"${{ needs.release-please.outputs.cs2--version }}"}]')
+            fi
+            
+            if [ "${{ needs.release-please.outputs.minecraft--release_created }}" == "true" ]; then
+              matrix=$(echo "$matrix" | jq -c '.include += [{"game":"minecraft","image-name":"minato-agent-minecraft","version":"${{ needs.release-please.outputs.minecraft--version }}"}]')
+            fi
+            
+            if [ "${{ needs.release-please.outputs.palworld--release_created }}" == "true" ]; then
+              matrix=$(echo "$matrix" | jq -c '.include += [{"game":"palworld","image-name":"minato-agent-palworld","version":"${{ needs.release-please.outputs.palworld--version }}"}]')
+            fi
+            
+            if [ "${{ needs.release-please.outputs.generic--release_created }}" == "true" ]; then
+              matrix=$(echo "$matrix" | jq -c '.include += [{"game":"generic","image-name":"minato-agent-generic","version":"${{ needs.release-please.outputs.generic--version }}"}]')
+            fi
           fi
           
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
@@ -71,26 +82,30 @@ jobs:
       
       - id: charts
         run: |
-          matrix='{"include":[]}'
-          
-          if [ "${{ needs.release-please.outputs.library--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"chart":"_library","path":"charts/_library","version":"${{ needs.release-please.outputs.library--version }}"}]')
-          fi
-          
-          if [ "${{ needs.release-please.outputs.cs2--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"chart":"cs2","path":"games/cs2/chart","version":"${{ needs.release-please.outputs.cs2--version }}"}]')
-          fi
-          
-          if [ "${{ needs.release-please.outputs.minecraft--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"chart":"minecraft","path":"games/minecraft/chart","version":"${{ needs.release-please.outputs.minecraft--version }}"}]')
-          fi
-          
-          if [ "${{ needs.release-please.outputs.palworld--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"chart":"palworld","path":"games/palworld/chart","version":"${{ needs.release-please.outputs.palworld--version }}"}]')
-          fi
+          if [ "${{ github.ref_name }}" != "main" ] || [ "${{ inputs.force-publish }}" == "true" ]; then
+            matrix='{"include":[{"chart":"_library","path":"charts/_library","version":"0.0.0-test"},{"chart":"cs2","path":"games/cs2/chart","version":"0.0.0-test"},{"chart":"minecraft","path":"games/minecraft/chart","version":"0.0.0-test"},{"chart":"palworld","path":"games/palworld/chart","version":"0.0.0-test"},{"chart":"generic","path":"games/generic/chart","version":"0.0.0-test"}]}'
+          else
+            matrix='{"include":[]}'
+            
+            if [ "${{ needs.release-please.outputs.library--release_created }}" == "true" ]; then
+              matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"_library","path":"charts/_library","version":"${{ needs.release-please.outputs.library--version }}"}]')
+            fi
+            
+            if [ "${{ needs.release-please.outputs.cs2--release_created }}" == "true" ]; then
+              matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"cs2","path":"games/cs2/chart","version":"${{ needs.release-please.outputs.cs2--version }}"}]')
+            fi
+            
+            if [ "${{ needs.release-please.outputs.minecraft--release_created }}" == "true" ]; then
+              matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"minecraft","path":"games/minecraft/chart","version":"${{ needs.release-please.outputs.minecraft--version }}"}]')
+            fi
+            
+            if [ "${{ needs.release-please.outputs.palworld--release_created }}" == "true" ]; then
+              matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"palworld","path":"games/palworld/chart","version":"${{ needs.release-please.outputs.palworld--version }}"}]')
+            fi
 
-          if [ "${{ needs.release-please.outputs.generic--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"chart":"generic","path":"games/generic/chart","version":"${{ needs.release-please.outputs.generic--version }}"}]')
+            if [ "${{ needs.release-please.outputs.generic--release_created }}" == "true" ]; then
+              matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"generic","path":"games/generic/chart","version":"${{ needs.release-please.outputs.generic--version }}"}]')
+            fi
           fi
           
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
