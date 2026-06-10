@@ -97,6 +97,15 @@
         }
       }
     },
+    "gameServer": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "nameOverride": { "type": "string" },
+        "env": { "type": "object" },
+        "tier": { "type": "string" }
+      }
+    },
     "networking": {
       "type": "object",
       "properties": {

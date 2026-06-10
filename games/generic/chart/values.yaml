@@ -57,6 +57,17 @@ fleet:
       maxSurge: 1
       drainTimeoutSeconds: 300
 
+# GameServer configuration (single instance, optional)
+gameServer:
+  # -- Enable GameServer (standalone instance)
+  enabled: false
+  # -- Override GameServer name
+  nameOverride: ""
+  # -- Additional environment variables (merged with game.env)
+  env: {}
+  # -- Server tier (generic only: small, medium, large)
+  tier: ""
+
 # Networking
 networking:
   exposeMode: ClusterIP
