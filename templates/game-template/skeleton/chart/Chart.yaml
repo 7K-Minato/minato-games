@@ -18,5 +18,5 @@ maintainers:
 dependencies:
   - name: minato-games-library
     version: "0.1.x"
-    repository: "oci://harbor.7kgroup.com/minato-games/charts"
+    repository: "oci://harbor.7kgroup.com/7kminato/charts"
     condition: library.enabled

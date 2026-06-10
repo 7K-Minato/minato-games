@@ -14,7 +14,7 @@ all: lint test
 _use-local-library:
 	@for game in $(GAMES); do \
 		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
-			sed -i 's|repository: "oci://harbor.7kgroup.com/minato-games/charts"|repository: "file://../../../charts/_library"|' $(GAMES_DIR)/$$game/chart/Chart.yaml; \
+			sed -i 's|repository: "oci://harbor.7kgroup.com/7kminato/charts"|repository: "file://../../../charts/_library"|' $(GAMES_DIR)/$$game/chart/Chart.yaml; \
 			rm -f $(GAMES_DIR)/$$game/chart/Chart.lock $(GAMES_DIR)/$$game/chart/charts/minato-games-library-*.tgz; \
 			helm dependency build $(GAMES_DIR)/$$game/chart || exit 1; \
 		fi \
@@ -25,7 +25,7 @@ _use-local-library:
 _use-oci-library:
 	@for game in $(GAMES); do \
 		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
-			sed -i 's|repository: "file://../../../charts/_library"|repository: "oci://harbor.7kgroup.com/minato-games/charts"|' $(GAMES_DIR)/$$game/chart/Chart.yaml; \
+			sed -i 's|repository: "file://../../../charts/_library"|repository: "oci://harbor.7kgroup.com/7kminato/charts"|' $(GAMES_DIR)/$$game/chart/Chart.yaml; \
 			rm -f $(GAMES_DIR)/$$game/chart/Chart.lock $(GAMES_DIR)/$$game/chart/charts/minato-games-library-*.tgz; \
 		fi \
 	done
@@ -62,11 +62,11 @@ test-chart: ## Test a specific chart (GAME=minecraft) using local library.
 		echo "Usage: make test-chart GAME=minecraft"; \
 		exit 1; \
 	fi
-	@sed -i 's|repository: "oci://harbor.7kgroup.com/minato-games/charts"|repository: "file://../../../charts/_library"|' $(GAMES_DIR)/$(GAME)/chart/Chart.yaml
+	@sed -i 's|repository: "oci://harbor.7kgroup.com/7kminato/charts"|repository: "file://../../../charts/_library"|' $(GAMES_DIR)/$(GAME)/chart/Chart.yaml
 	@rm -f $(GAMES_DIR)/$(GAME)/chart/Chart.lock $(GAMES_DIR)/$(GAME)/chart/charts/minato-games-library-*.tgz
 	@helm dependency build $(GAMES_DIR)/$(GAME)/chart || exit 1
 	helm unittest $(GAMES_DIR)/$(GAME)/chart
-	@sed -i 's|repository: "file://../../../charts/_library"|repository: "oci://harbor.7kgroup.com/minato-games/charts"|' $(GAMES_DIR)/$(GAME)/chart/Chart.yaml
+	@sed -i 's|repository: "file://../../../charts/_library"|repository: "oci://harbor.7kgroup.com/7kminato/charts"|' $(GAMES_DIR)/$(GAME)/chart/Chart.yaml
 	@rm -f $(GAMES_DIR)/$(GAME)/chart/Chart.lock $(GAMES_DIR)/$(GAME)/chart/charts/minato-games-library-*.tgz
 
 .PHONY: template

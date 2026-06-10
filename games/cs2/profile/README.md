@@ -11,7 +11,7 @@ This profile configures a Counter-Strike 2 dedicated server using the [joedwards
 
 ## Agent
 
-- **Image**: `harbor.7kgroup.com/minato-games/minato-agent-cs2:v0.1.0`
+- **Image**: `harbor.7kgroup.com/7kminato/minato-agent-cs2:v0.1.0`
 - **RCON**: Source RCON on game port 27015
 - **Version**: 0.1.0
 

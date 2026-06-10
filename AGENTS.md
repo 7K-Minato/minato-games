@@ -41,7 +41,7 @@ Game charts declare the library as an OCI dependency in `Chart.yaml`:
 ```yaml
 dependencies:
   - name: minato-games-library
-    repository: "oci://harbor.7kgroup.com/minato-games/charts"
+    repository: "oci://harbor.7kgroup.com/7kminato/charts"
 ```
 
 For local testing, `make test` and `make test-chart` temporarily rewrite this to `file://../../../charts/_library`, run `helm dependency build`, then restore the OCI URL. Do not manually edit `Chart.yaml` — the Makefile handles it.
