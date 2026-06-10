@@ -32,8 +32,4 @@ spec:
     storageClass: {{ .Values.game.storage.storageClass }}
     {{- end }}
   {{- end }}
-  {{- if .Values.networking.exposeMode }}
-  networking:
-    exposeMode: {{ .Values.networking.exposeMode }}
-  {{- end }}
 {{- end }}
