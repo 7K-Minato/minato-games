@@ -2,7 +2,7 @@ apiVersion: v2
 name: cs2
 description: Counter-Strike 2 dedicated server for Minato
 type: application
-version: 0.1.1
+version: 0.1.2
 appVersion: latest
 keywords:
   - cs2

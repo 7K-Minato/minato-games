@@ -2,7 +2,7 @@ apiVersion: v2
 name: minecraft-paper
 description: Minecraft Paper server for Minato — persistent, scalable, production-ready
 type: application
-version: 0.1.1
+version: 0.1.2
 appVersion: 1.20.4
 keywords:
   - minecraft
