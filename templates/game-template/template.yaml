@@ -2,12 +2,13 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: minato-game-template
-  title: Minato Game Chart
-  description: Scaffold a new game server Helm chart for the Minato platform
+  title: Minato Game
+  description: Scaffold a new game server for the Minato platform (chart, agent, and profile)
   tags:
     - helm
     - gameserver
     - minato
+    - go
 spec:
   owner: 7k-group
   type: service
@@ -23,14 +24,14 @@ spec:
         gameName:
           title: Game Name
           type: string
-          description: Short kebab-case name for the chart (e.g., minecraft-paper, cs2, palworld)
+          description: Short kebab-case name for the game (e.g., minecraft, cs2, palworld)
           pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
           ui:autofocus: true
 
         displayName:
           title: Display Name
           type: string
-          description: Human-readable game name (e.g., "Minecraft Paper")
+          description: Human-readable game name (e.g., "Minecraft")
 
         description:
           title: Description
@@ -98,7 +99,7 @@ spec:
           title: Minato Agent Image
           type: string
           description: Minato agent sidecar image
-          default: ghcr.io/7k-group/minato-agent-generic:v0.1.0
+          default: harbor.7kgroup.com/minato-games/minato-agent-generic:v0.1.0
 
         agentVersion:
           title: Agent Version
@@ -172,12 +173,12 @@ spec:
               - 7k-group
 
   steps:
-    - id: fetch-template
-      name: Fetch Template Skeleton
+    - id: fetch-skeleton
+      name: Fetch Game Skeleton
       action: fetch:template
       input:
         url: ./skeleton
-        targetPath: charts/${{ parameters.gameName }}
+        targetPath: games/${{ parameters.gameName }}
         values:
           gameName: ${{ parameters.gameName }}
           displayName: ${{ parameters.displayName }}
@@ -192,12 +193,6 @@ spec:
           agentVersion: ${{ parameters.agentVersion }}
           actions: ${{ parameters.actions }}
           capabilities: ${{ parameters.capabilities }}
-
-    - id: read-chart-yaml
-      name: Read Chart.yaml
-      action: fs:read
-      input:
-        path: charts/${{ parameters.gameName }}/Chart.yaml
 
     - id: update-release-please
       name: Update Release Please Config
@@ -219,11 +214,15 @@ spec:
         expression: |
           $merge([$, {
             "packages": $merge([$.packages, {
-              "charts/${{ parameters.gameName }}": {
+              "games/${{ parameters.gameName }}": {
                 "component": "${{ parameters.gameName }}",
-                "release-type": "helm",
+                "release-type": "go",
                 "include-component-in-tag": true,
-                "changelog-path": "CHANGELOG.md"
+                "changelog-path": "CHANGELOG.md",
+                "extra-files": [
+                  "chart/Chart.yaml",
+                  "agent/main.go"
+                ]
               }
             }])
           }])
@@ -242,7 +241,7 @@ spec:
         path: .release-please-manifest.json
         expression: |
           $merge([$, {
-            "charts/${{ parameters.gameName }}": "0.1.0"
+            "games/${{ parameters.gameName }}": "0.1.0"
           }])
 
     - id: write-manifest
@@ -257,24 +256,28 @@ spec:
       action: publish:github:pull-request
       input:
         repoUrl: ${{ parameters.repoUrl }}
-        branchName: feat/add-${{ parameters.gameName }}-chart
-        title: "feat(${{ parameters.gameName }}): add ${{ parameters.displayName }} game chart"
+        branchName: feat/add-${{ parameters.gameName }}-game
+        title: "feat(${{ parameters.gameName }}): add ${{ parameters.displayName }} game"
         description: |
-          This PR adds a new game chart for ${{ parameters.displayName }}.
+          This PR adds a new game for ${{ parameters.displayName }}.
 
           ## Changes
-          - Added `charts/${{ parameters.gameName }}/` with complete Helm chart
-          - Updated `release-please-config.json` to include new chart
+          - Added `games/${{ parameters.gameName }}/` with:
+            - `chart/` - Helm chart for the game
+            - `agent/` - Minato agent implementation
+            - `profile/` - GameProfile and example GameServer
+          - Updated `release-please-config.json` to include new game
           - Updated `.release-please-manifest.json` with initial version
 
           ## Game Details
           - **Image**: `${{ parameters.gameImage }}`
           - **Storage**: `${{ parameters.storageSize }}` at `${{ parameters.storageMountPath }}`
           - **Ports**: ${{ parameters.ports | json }}
+          - **Agent**: `${{ parameters.agentImage }}`
 
           ## Next Steps
-          1. Review the generated chart
-          2. Customize `values.yaml` and templates as needed
+          1. Review the generated chart, agent, and profile
+          2. Implement game-specific agent logic in `games/${{ parameters.gameName }}/agent/main.go`
           3. Merge to trigger CI/CD
         targetPath: .
 
@@ -287,6 +290,9 @@ spec:
     text:
       - title: Summary
         content: |
-          Created PR for ${{ parameters.displayName }} game chart.
+          Created PR for ${{ parameters.displayName }} game.
 
-          The chart is located at `charts/${{ parameters.gameName }}/`.
+          The game is located at `games/${{ parameters.gameName }}/` with:
+          - Chart: `games/${{ parameters.gameName }}/chart/`
+          - Agent: `games/${{ parameters.gameName }}/agent/`
+          - Profile: `games/${{ parameters.gameName }}/profile/`

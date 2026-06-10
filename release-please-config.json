@@ -7,23 +7,44 @@
       "include-component-in-tag": true,
       "changelog-path": "CHANGELOG.md"
     },
-    "charts/cs2": {
+    "games/cs2": {
       "component": "cs2",
-      "release-type": "helm",
+      "release-type": "go",
       "include-component-in-tag": true,
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "chart/Chart.yaml",
+        "agent/main.go"
+      ]
     },
-    "charts/minecraft-paper": {
-      "component": "minecraft-paper",
-      "release-type": "helm",
+    "games/minecraft": {
+      "component": "minecraft",
+      "release-type": "go",
       "include-component-in-tag": true,
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "chart/Chart.yaml",
+        "agent/main.go"
+      ]
     },
-    "charts/palworld": {
+    "games/palworld": {
       "component": "palworld",
-      "release-type": "helm",
+      "release-type": "go",
       "include-component-in-tag": true,
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "chart/Chart.yaml",
+        "agent/main.go"
+      ]
+    },
+    "games/generic": {
+      "component": "generic",
+      "release-type": "go",
+      "include-component-in-tag": true,
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "agent/main.go"
+      ]
     }
   },
   "separate-pull-requests": false,

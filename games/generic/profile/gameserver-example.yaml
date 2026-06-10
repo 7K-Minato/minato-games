@@ -1,0 +1,8 @@
+apiVersion: operator.minato.io/v1
+kind: GameServer
+metadata:
+  name: generic-server-1
+  namespace: default
+spec:
+  profile: generic
+  tier: small

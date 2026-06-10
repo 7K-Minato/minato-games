@@ -1,0 +1,86 @@
+# Default values for generic.
+
+nameOverride: ""
+fullnameOverride: ""
+
+gameProfile:
+  nameOverride: ""
+
+# Game server configuration
+game:
+  displayName: "Generic Game Server"
+  image: gcr.io/distroless/static:nonroot
+  imagePullPolicy: IfNotPresent
+  appVersion: latest
+
+  env: {}
+
+  storage:
+    size: 1Gi
+    mountPath: /data
+    storageClass: ""
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+  # -- Agent configuration
+  agent:
+    image: harbor.7kgroup.com/minato-games/minato-agent-generic:v0.1.0
+    version: "0.1.0"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
+  ports:
+    - name: agent
+      containerPort: 8080
+      protocol: TCP
+
+# Fleet configuration (optional)
+fleet:
+  enabled: false
+  replicas: 1
+
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+      drainTimeoutSeconds: 300
+
+# Networking
+networking:
+  exposeMode: ClusterIP
+
+# Security
+security:
+  networkPolicy:
+    enabled: true
+  rcon:
+    password: ""
+    existingSecret: ""
+
+# Monitoring
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}
+
+# Service account
+serviceAccount:
+  create: false
+  name: ""
+
+# Library chart
+library:
+  enabled: true

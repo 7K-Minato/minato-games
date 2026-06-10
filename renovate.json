@@ -5,7 +5,7 @@
   ],
   "labels": ["dependencies"],
   "helm-values": {
-    "fileMatch": ["charts/.+/values\\.yaml$"]
+    "fileMatch": ["games/.+/chart/values\\.yaml$"]
   },
   "github-actions": {
     "fileMatch": ["^\\.github/workflows/.+\\.ya?ml$"]
@@ -13,7 +13,7 @@
   "packageRules": [
     {
       "description": "Group all minato agent images together",
-      "matchPackageNames": ["/ghcr\\.io/7k-group/minato-agent-.+/"],
+      "matchPackageNames": ["/harbor\\.7kgroup\\.com/minato-games/minato-agent-.+/"],
       "groupName": "minato-agents"
     },
     {
@@ -40,7 +40,7 @@
     {
       "description": "Update Docker images in Helm values.yaml files",
       "customType": "regex",
-      "fileMatch": ["charts/.+/values\\.yaml$"],
+      "fileMatch": ["games/.+/chart/values\\.yaml$"],
       "matchStrings": [
         "image:\\s+(?<depName>[^\\s:]+)(?::(?<currentValue>[^\\s]+))?"
       ],

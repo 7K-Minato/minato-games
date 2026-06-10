@@ -1,6 +1,0 @@
-dependencies:
-- name: minato-games-library
-  repository: file://../_library
-  version: 0.1.0
-digest: sha256:bd0188249675442b609848abf75760093fd7744f33a7179968cea3cc91913d04
-generated: "2026-05-27T12:36:02.422627449Z"

@@ -1,0 +1,22 @@
+apiVersion: v2
+name: generic
+description: Generic game server profile for Minato
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - generic
+  - gameserver
+  - minato
+home: https://github.com/7k-minato/minato-games
+sources:
+  - https://github.com/7k-minato/minato-games
+  - https://github.com/7k-minato/minato
+maintainers:
+  - name: 7K Group
+    email: dev@7kgroup.com
+dependencies:
+  - name: minato-games-library
+    version: "0.1.x"
+    repository: "oci://harbor.7kgroup.com/minato-games/charts"
+    condition: library.enabled

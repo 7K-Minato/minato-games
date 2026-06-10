@@ -1,0 +1,10 @@
+apiVersion: operator.minato.io/v1
+kind: GameServer
+metadata:
+  name: ${{ values.gameName }}-server-1
+  namespace: default
+spec:
+  profile: ${{ values.gameName }}
+  tier: medium
+  env:
+${{ values.defaultEnv | dump | indent 4 }}

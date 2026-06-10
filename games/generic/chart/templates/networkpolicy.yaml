@@ -1,0 +1,3 @@
+{{- if .Values.security.networkPolicy.enabled }}
+{{- include "minato-games.networkpolicy" . }}
+{{- end }}

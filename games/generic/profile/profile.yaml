@@ -1,0 +1,38 @@
+apiVersion: operator.minato.io/v1
+kind: GameProfile
+metadata:
+  name: generic
+spec:
+  displayName: "Generic"
+  description: "Game-agnostic agent using YAML-declared actions"
+  image: "gcr.io/distroless/static:nonroot"
+  imagePullPolicy: IfNotPresent
+
+  agent:
+    image: "harbor.7kgroup.com/minato-games/minato-agent-generic:v0.1.0"
+    version: "0.1.0"
+
+  ports:
+    - name: agent
+      containerPort: 8080
+      protocol: TCP
+
+  storage:
+    mountPath: /data
+    sizeDefault: 1Gi
+    sizeMin: 1Gi
+    sizeMax: 10Gi
+    accessModes:
+      - ReadWriteOnce
+
+  capabilities:
+    files: false
+    sftp: false
+    backup: false
+    restoreFromSnapshot: false
+
+  actions:
+    - name: noop
+      description: "No-op action for testing"
+      concurrency: serialize
+      timeout: 1m

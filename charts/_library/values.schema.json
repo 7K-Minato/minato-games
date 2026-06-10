@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Minato Games Library Chart Values Schema",
+  "description": "Reference schema for charts consuming the minato-games-library. Copy and adapt this as your starting values.schema.json.",
+  "properties": {
+    "nameOverride": {
+      "type": "string",
+      "description": "Override the chart name used in resource naming."
+    },
+    "fullnameOverride": {
+      "type": "string",
+      "description": "Override the fully qualified application name."
+    },
+    "controlPlaneNamespace": {
+      "type": "string",
+      "default": "minato-system",
+      "description": "Namespace where the Minato control plane (agent gRPC) resides."
+    },
+    "monitoringNamespace": {
+      "type": "string",
+      "default": "monitoring",
+      "description": "Namespace where monitoring/scraping services reside."
+    },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to create a dedicated ServiceAccount."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the ServiceAccount to create or use. Defaults to the fullname if create=true."
+        }
+      }
+    },
+    "gameProfile": {
+      "type": "object",
+      "properties": {
+        "nameOverride": {
+          "type": "string",
+          "description": "Override the GameProfile name (cluster-scoped, must be unique)."
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "networkPolicy": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable NetworkPolicy generation."
+            },
+            "strictMode": {
+              "type": "boolean",
+              "default": false,
+              "description": "Restrict egress to DNS and Kubernetes API only."
+            }
+          }
+        },
+        "rcon": {
+          "type": "object",
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "description": "Name of an existing Secret containing RCON credentials."
+            }
+          }
+        }
+      }
+    },
+    "game": {
+      "type": "object",
+      "properties": {
+        "ports": {
+          "type": "array",
+          "description": "Game server ports exposed by the container.",
+          "items": {
+            "type": "object",
+            "required": ["name", "containerPort"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "containerPort": {
+                "type": "integer"
+              },
+              "protocol": {
+                "type": "string",
+                "default": "TCP"
+              }
+            }
+          }
+        },
+        "env": {
+          "type": "object",
+          "description": "Environment variables injected into the game container.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "actions": {
+          "type": "array",
+          "description": "Game actions exposed to the Minato control plane.",
+          "items": {
+            "type": "object",
+            "required": ["name", "description"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "concurrency": {
+                "type": "string",
+                "default": "allow"
+              },
+              "timeout": {
+                "type": "string",
+                "default": "5m"
+              },
+              "params": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "required": ["type"],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "required": {
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

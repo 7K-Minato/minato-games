@@ -18,10 +18,10 @@ jobs:
     outputs:
       games: ${{ steps.discover.outputs.games }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - id: discover
         run: |
-          games=$(find charts -maxdepth 1 -mindepth 1 -type d ! -name '_*' -printf '%f\n' | jq -R -s -c 'split("\n")[:-1]')
+          games=$(find games -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | jq -R -s -c 'split("\n")[:-1]')
           echo "games=$games" >> "$GITHUB_OUTPUT"
           echo "Discovered games: $games"
 
@@ -30,11 +30,88 @@ jobs:
     with:
       path: charts/_library
 
-  games:
+  charts:
     needs: discover
     strategy:
       matrix:
         game: ${{ fromJSON(needs.discover.outputs.games) }}
-    uses: 7K-Hiroba/workflows-library/.github/workflows/ci-helm.yml@v1
-    with:
-      path: charts/${{ matrix.game }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'latest'
+      - name: Install helm-unittest
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
+      - name: Use local library dependency
+        run: |
+          sed -i 's|repository: "oci://harbor.7kgroup.com/minato-games/charts"|repository: "file://../../../charts/_library"|' games/${{ matrix.game }}/chart/Chart.yaml
+      - name: Remove packaged dependencies
+        run: |
+          rm -f games/${{ matrix.game }}/chart/Chart.lock
+          rm -f games/${{ matrix.game }}/chart/charts/minato-games-library-*.tgz
+      - name: Build dependencies
+        run: helm dependency build games/${{ matrix.game }}/chart
+      - name: Lint chart
+        run: helm lint games/${{ matrix.game }}/chart
+      - name: Test chart
+        run: helm unittest games/${{ matrix.game }}/chart
+
+  agents:
+    needs: discover
+    strategy:
+      matrix:
+        game: ${{ fromJSON(needs.discover.outputs.games) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Download Go modules
+        run: go mod download
+      - name: Build agent
+        run: |
+          echo "Building agent for ${{ matrix.game }}..."
+          CGO_ENABLED=0 go build -ldflags='-s -w' -o bin/agent-${{ matrix.game }} ./games/${{ matrix.game }}/agent
+      - name: Run go vet
+        run: go vet ./games/${{ matrix.game }}/agent/...
+      - name: Run tests
+        run: go test ./games/${{ matrix.game }}/agent/...
+      - name: Lint agent
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.12
+          working-directory: .
+          args: ./games/${{ matrix.game }}/agent/...
+
+  profiles:
+    needs: discover
+    strategy:
+      matrix:
+        game: ${{ fromJSON(needs.discover.outputs.games) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup yq
+        uses: frenck/action-setup-yq@v1
+      - name: Validate GameProfile YAMLs
+        run: |
+          echo "Validating profiles for ${{ matrix.game }}..."
+          for f in games/${{ matrix.game }}/profile/*.yaml; do
+            echo "Checking $f"
+            # Basic YAML syntax check
+            python3 -c "import yaml; yaml.safe_load(open('$f'))"
+          done
+      - name: Check profile references
+        run: |
+          # Ensure gameserver-example.yaml references the correct profile
+          profile_name=$(yq e '.metadata.name' games/${{ matrix.game }}/profile/profile.yaml)
+          example_ref=$(yq e '.spec.profile' games/${{ matrix.game }}/profile/gameserver-example.yaml 2>/dev/null || true)
+          if [ -n "$example_ref" ] && [ "$example_ref" != "$profile_name" ]; then
+            echo "Error: gameserver-example.yaml references '$example_ref' but profile is named '$profile_name'"
+            exit 1
+          fi
+          echo "Profile references validated"
