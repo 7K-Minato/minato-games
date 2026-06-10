@@ -30,8 +30,7 @@ Use the Minato Game Template in Backstage to scaffold a new game:
 - All charts must have `values.schema.json`
 - All charts must have unit tests
 - GameProfile names must be unique across the repository
-- Use the shared `_library` chart for common helpers
-- Library dependency must use OCI registry: `oci://harbor.7kgroup.com/7kminato/charts`
+- Charts should be self-contained and not depend on external Helm libraries
 - Agents must implement the Minato agent gRPC API
 - Agents should be built with `CGO_ENABLED=0` and run as non-root
 
@@ -65,7 +64,6 @@ All commits must follow [Conventional Commits](https://www.conventionalcommits.o
 
 | Scope | Game | Example |
 |-------|------|---------|
-| `library` | `charts/_library` | `feat(library): add new helper template` |
 | `cs2` | `games/cs2` | `fix(cs2): update default env vars` |
 | `minecraft` | `games/minecraft` | `feat(minecraft): add new config option` |
 | `palworld` | `games/palworld` | `fix(palworld): correct resource limits` |

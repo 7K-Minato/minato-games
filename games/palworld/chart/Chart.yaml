@@ -15,8 +15,3 @@ sources:
 maintainers:
   - name: 7K Group
     email: dev@7kgroup.com
-dependencies:
-  - name: minato-games-library
-    version: 0.1.1
-    repository: oci://harbor.7kgroup.com/7kminato/charts
-    condition: library.enabled

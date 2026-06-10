@@ -135,5 +135,4 @@ serviceAccount:
   name: ""
   annotations: {}
 
-library:
-  enabled: true
+

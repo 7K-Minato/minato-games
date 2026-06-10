@@ -129,6 +129,4 @@ serviceAccount:
   name: ""
   annotations: {}
 
-# Library chart (internal)
-library:
-  enabled: true
+

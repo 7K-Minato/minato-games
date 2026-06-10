@@ -81,6 +81,4 @@ serviceAccount:
   create: false
   name: ""
 
-# Library chart
-library:
-  enabled: true
+
