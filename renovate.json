@@ -5,10 +5,14 @@
   ],
   "labels": ["dependencies"],
   "helm-values": {
-    "fileMatch": ["games/.+/chart/values\\.yaml$"]
+    "managerFilePatterns": [
+      "/games/.+/chart/values\\.yaml$/"
+    ]
   },
   "github-actions": {
-    "fileMatch": ["^\\.github/workflows/.+\\.ya?ml$"]
+    "managerFilePatterns": [
+      "/^\\.github/workflows/.+\\.ya?ml$/"
+    ]
   },
   "packageRules": [
     {
@@ -40,7 +44,9 @@
     {
       "description": "Update Docker images in Helm values.yaml files",
       "customType": "regex",
-      "fileMatch": ["games/.+/chart/values\\.yaml$"],
+      "managerFilePatterns": [
+        "/games/.+/chart/values\\.yaml$/"
+      ],
       "matchStrings": [
         "image:\\s+(?<depName>[^\\s:]+)(?::(?<currentValue>[^\\s]+))?"
       ],
