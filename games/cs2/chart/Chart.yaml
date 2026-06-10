@@ -2,8 +2,8 @@ apiVersion: v2
 name: cs2
 description: Counter-Strike 2 dedicated server for Minato
 type: application
-version: 0.1.0
-appVersion: "latest"
+version: 0.1.1
+appVersion: latest
 keywords:
   - cs2
   - counter-strike
@@ -18,6 +18,6 @@ maintainers:
     email: dev@7kgroup.com
 dependencies:
   - name: minato-games-library
-    version: "0.1.x"
-    repository: "file://../../../charts/_library"
+    version: 0.1.x
+    repository: file://../../../charts/_library
     condition: library.enabled
