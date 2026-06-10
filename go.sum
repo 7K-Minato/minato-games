@@ -1,5 +1,7 @@
 github.com/7k-minato/minato v1.1.1 h1:vo5+L11GmiyJeGxAHNfYTgiBojMMLWnjBpBA6dyIczE=
 github.com/7k-minato/minato v1.1.1/go.mod h1:A/+mladnHtDnaS95OceQO3etTN8Xl9Q0xzgoWKB3pP4=
+github.com/7k-minato/minato v1.2.0 h1:SxmxO5typZk1cnS5jcCF/SZBVpjYddeGhaeHQ6XYyL8=
+github.com/7k-minato/minato v1.2.0/go.mod h1:A/+mladnHtDnaS95OceQO3etTN8Xl9Q0xzgoWKB3pP4=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
