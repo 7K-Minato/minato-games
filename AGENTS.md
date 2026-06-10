@@ -10,7 +10,6 @@ games/<game>/
   agent/       # Go gRPC agent implementation
   profile/     # Raw GameProfile YAML + example GameServer
 
-charts/_library/  # Shared Helm library chart (shared helpers + NetworkPolicy template)
 templates/        # Backstage scaffolder skeleton (NOT Go code — Jinja2 templates)
 ```
 
@@ -18,8 +17,8 @@ templates/        # Backstage scaffolder skeleton (NOT Go code — Jinja2 templa
 
 ```bash
 # Charts
-make lint              # lint all charts (library + all games)
-make test              # test all charts (auto-patches local library dep)
+make lint              # lint all game charts
+make test              # test all game charts
 make test-chart GAME=minecraft   # test one chart
 make template          # render all charts for inspection
 
@@ -34,19 +33,6 @@ make validate-profiles # YAML syntax check all profiles
 ```
 
 ## Critical Context
-
-### Helm Library Dependency Patching
-
-Game charts declare the library as an OCI dependency in `Chart.yaml`:
-```yaml
-dependencies:
-  - name: minato-games-library
-    repository: "oci://harbor.7kgroup.com/minato-games/charts"
-```
-
-For local testing, `make test` and `make test-chart` temporarily rewrite this to `file://../../../charts/_library`, run `helm dependency build`, then restore the OCI URL. Do not manually edit `Chart.yaml` — the Makefile handles it.
-
-**If you run `helm` commands manually**, you must do the same patching or charts will fail to find the library.
 
 ### Go Module Path
 
@@ -68,7 +54,7 @@ feat(cs2): add new env var
 feat(palworld)!: breaking change description
 ```
 
-Scopes: `library`, `cs2`, `minecraft`, `palworld`, `generic`, or the new game name.
+Scopes: `cs2`, `minecraft`, `palworld`, `generic`, or the new game name.
 
 ### Release Process
 

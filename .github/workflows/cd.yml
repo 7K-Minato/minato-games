@@ -17,9 +17,6 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
-      library--release_created: ${{ steps.release.outputs['charts/_library--release_created'] }}
-      library--tag_name: ${{ steps.release.outputs['charts/_library--tag_name'] }}
-      library--version: ${{ steps.release.outputs['charts/_library--version'] }}
       cs2--release_created: ${{ steps.release.outputs['games/cs2--release_created'] }}
       cs2--tag_name: ${{ steps.release.outputs['games/cs2--tag_name'] }}
       cs2--version: ${{ steps.release.outputs['games/cs2--version'] }}
@@ -44,26 +41,26 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       agents: ${{ steps.agents.outputs.matrix }}
-      charts: ${{ steps.charts.outputs.matrix }}
+      game-charts: ${{ steps.charts.outputs.matrix }}
     steps:
       - id: agents
         run: |
           matrix='{"include":[]}'
           
           if [ "${{ needs.release-please.outputs.cs2--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"game":"cs2","image-name":"minato-agent-cs2","version":"${{ needs.release-please.outputs.cs2--version }}"}]')
+            matrix=$(echo "$matrix" | jq -c '.include += [{"game":"cs2","image-name":"minato-agent-cs2","version":"${{ needs.release-please.outputs.cs2--version }}"}]')
           fi
           
           if [ "${{ needs.release-please.outputs.minecraft--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"game":"minecraft","image-name":"minato-agent-minecraft","version":"${{ needs.release-please.outputs.minecraft--version }}"}]')
+            matrix=$(echo "$matrix" | jq -c '.include += [{"game":"minecraft","image-name":"minato-agent-minecraft","version":"${{ needs.release-please.outputs.minecraft--version }}"}]')
           fi
           
           if [ "${{ needs.release-please.outputs.palworld--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"game":"palworld","image-name":"minato-agent-palworld","version":"${{ needs.release-please.outputs.palworld--version }}"}]')
+            matrix=$(echo "$matrix" | jq -c '.include += [{"game":"palworld","image-name":"minato-agent-palworld","version":"${{ needs.release-please.outputs.palworld--version }}"}]')
           fi
           
           if [ "${{ needs.release-please.outputs.generic--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"game":"generic","image-name":"minato-agent-generic","version":"${{ needs.release-please.outputs.generic--version }}"}]')
+            matrix=$(echo "$matrix" | jq -c '.include += [{"game":"generic","image-name":"minato-agent-generic","version":"${{ needs.release-please.outputs.generic--version }}"}]')
           fi
           
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
@@ -73,28 +70,24 @@ jobs:
         run: |
           matrix='{"include":[]}'
           
-          if [ "${{ needs.release-please.outputs.library--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"chart":"_library","path":"charts/_library","version":"${{ needs.release-please.outputs.library--version }}"}]')
-          fi
-          
           if [ "${{ needs.release-please.outputs.cs2--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"chart":"cs2","path":"games/cs2/chart","version":"${{ needs.release-please.outputs.cs2--version }}"}]')
+            matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"cs2","path":"games/cs2/chart","version":"${{ needs.release-please.outputs.cs2--version }}"}]')
           fi
           
           if [ "${{ needs.release-please.outputs.minecraft--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"chart":"minecraft","path":"games/minecraft/chart","version":"${{ needs.release-please.outputs.minecraft--version }}"}]')
+            matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"minecraft","path":"games/minecraft/chart","version":"${{ needs.release-please.outputs.minecraft--version }}"}]')
           fi
           
           if [ "${{ needs.release-please.outputs.palworld--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"chart":"palworld","path":"games/palworld/chart","version":"${{ needs.release-please.outputs.palworld--version }}"}]')
+            matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"palworld","path":"games/palworld/chart","version":"${{ needs.release-please.outputs.palworld--version }}"}]')
           fi
 
           if [ "${{ needs.release-please.outputs.generic--release_created }}" == "true" ]; then
-            matrix=$(echo "$matrix" | jq '.include += [{"chart":"generic","path":"games/generic/chart","version":"${{ needs.release-please.outputs.generic--version }}"}]')
+            matrix=$(echo "$matrix" | jq -c '.include += [{"chart":"generic","path":"games/generic/chart","version":"${{ needs.release-please.outputs.generic--version }}"}]')
           fi
           
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-          echo "Chart matrix: $matrix"
+          echo "Game chart matrix: $matrix"
 
   publish-agents:
     needs: prepare-matrix
@@ -174,13 +167,17 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: cosign attest --yes --type spdxjson --predicate sbom.spdx.json "${IMAGE}@${DIGEST}"
 
-  publish-charts:
-    needs: prepare-matrix
-    if: ${{ needs.prepare-matrix.outputs.charts != '{"include":[]}' }}
+  publish-game-charts:
+    needs: [prepare-matrix]
+    if: ${{ needs.prepare-matrix.outputs.game-charts != '{"include":[]}' }}
     strategy:
-      matrix: ${{ fromJSON(needs.prepare-matrix.outputs.charts) }}
+      matrix: ${{ fromJSON(needs.prepare-matrix.outputs.game-charts) }}
     uses: 7K-Hiroba/workflows-library/.github/workflows/release-helm.yml@v1
-    secrets: inherit
+    secrets:
+      HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
+      HARBOR_PROJECT: ${{ secrets.HARBOR_PROJECT }}
+      HARBOR_ROBOT_NAME: ${{ secrets.HARBOR_ROBOT_NAME }}
+      HARBOR_ROBOT_TOKEN: ${{ secrets.HARBOR_ROBOT_TOKEN }}
     with:
       path: ${{ matrix.path }}
       version: ${{ matrix.version }}

@@ -11,7 +11,7 @@ This profile configures a Palworld dedicated server using the [thijsvanloef/palw
 
 ## Agent
 
-- **Image**: `harbor.7kgroup.com/minato-games/minato-agent-palworld:v0.1.0`
+- **Image**: `harbor.7kgroup.com/7kminato/minato-agent-palworld:v0.1.0`
 - **RCON**: Enabled on port 25575
 - **Version**: 0.1.0
 

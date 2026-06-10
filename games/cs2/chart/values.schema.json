@@ -112,12 +112,6 @@
         "create": { "type": "boolean" },
         "name": { "type": "string" }
       }
-    },
-    "library": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" }
-      }
     }
   }
 }

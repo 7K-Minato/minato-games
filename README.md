@@ -23,7 +23,7 @@ Each game in this repository is organized under `games/<game-name>/` and contain
 helm registry login harbor.7kgroup.com
 
 # Install Minecraft
-helm install minecraft oci://harbor.7kgroup.com/minato-games/charts/minecraft \
+helm install minecraft oci://harbor.7kgroup.com/7kminato/charts/minecraft \
   --namespace minato \
   --create-namespace
 
@@ -132,14 +132,14 @@ For hosting providers, deploy each tenant into a separate namespace:
 
 ```bash
 # Tenant A
-helm install minecraft-tenant-a oci://harbor.7kgroup.com/minato-games/charts/minecraft \
+helm install minecraft-tenant-a oci://harbor.7kgroup.com/7kminato/charts/minecraft \
   --namespace tenant-a \
   --create-namespace \
   --set fleet.enabled=true \
   --set fleet.replicas=3
 
 # Tenant B
-helm install minecraft-tenant-b oci://harbor.7kgroup.com/minato-games/charts/minecraft \
+helm install minecraft-tenant-b oci://harbor.7kgroup.com/7kminato/charts/minecraft \
   --namespace tenant-b \
   --create-namespace \
   --set fleet.enabled=true \

@@ -1,6 +1,5 @@
 {{/*
-Shared helpers for Minato game charts.
-Usage in game charts: {{ include "minato-games.name" . }}
+Shared helpers for Minato game chart.
 */}}
 
 {{/* Expand the name of the chart. */}}

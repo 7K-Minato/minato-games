@@ -133,12 +133,6 @@
         "name": { "type": "string" },
         "annotations": { "type": "object" }
       }
-    },
-    "library": {
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" }
-      }
     }
   }
 }

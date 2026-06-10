@@ -2,38 +2,14 @@
 
 GAMES_DIR := games
 GAMES := $(notdir $(wildcard $(GAMES_DIR)/*))
-CHARTS_DIR := charts
 
 .PHONY: all
 all: lint test
 
 ##@ Chart Operations
 
-# Internal: patch game charts to use local library for CI/testing
-.PHONY: _use-local-library
-_use-local-library:
-	@for game in $(GAMES); do \
-		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
-			sed -i 's|repository: "oci://harbor.7kgroup.com/minato-games/charts"|repository: "file://../../../charts/_library"|' $(GAMES_DIR)/$$game/chart/Chart.yaml; \
-			rm -f $(GAMES_DIR)/$$game/chart/Chart.lock $(GAMES_DIR)/$$game/chart/charts/minato-games-library-*.tgz; \
-			helm dependency build $(GAMES_DIR)/$$game/chart || exit 1; \
-		fi \
-	done
-
-# Internal: restore game charts to use OCI library
-.PHONY: _use-oci-library
-_use-oci-library:
-	@for game in $(GAMES); do \
-		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
-			sed -i 's|repository: "file://../../../charts/_library"|repository: "oci://harbor.7kgroup.com/minato-games/charts"|' $(GAMES_DIR)/$$game/chart/Chart.yaml; \
-			rm -f $(GAMES_DIR)/$$game/chart/Chart.lock $(GAMES_DIR)/$$game/chart/charts/minato-games-library-*.tgz; \
-		fi \
-	done
-
 .PHONY: lint
-lint: ## Lint all charts.
-	@echo "Linting library chart..."
-	helm lint $(CHARTS_DIR)/_library || exit 1
+lint: ## Lint all game charts.
 	@echo "Linting game charts..."
 	@for game in $(GAMES); do \
 		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
@@ -43,9 +19,7 @@ lint: ## Lint all charts.
 	done
 
 .PHONY: test
-test: ## Test all charts (uses local library).
-	@echo "Patching charts to use local library..."
-	@$(MAKE) _use-local-library
+test: ## Test all game charts.
 	@echo "Testing game charts..."
 	@for game in $(GAMES); do \
 		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
@@ -53,21 +27,14 @@ test: ## Test all charts (uses local library).
 			helm unittest $(GAMES_DIR)/$$game/chart || exit 1; \
 		fi \
 	done
-	@echo "Restoring charts to use OCI library..."
-	@$(MAKE) _use-oci-library
 
 .PHONY: test-chart
-test-chart: ## Test a specific chart (GAME=minecraft) using local library.
+test-chart: ## Test a specific chart (GAME=minecraft).
 	@if [ -z "$(GAME)" ]; then \
 		echo "Usage: make test-chart GAME=minecraft"; \
 		exit 1; \
 	fi
-	@sed -i 's|repository: "oci://harbor.7kgroup.com/minato-games/charts"|repository: "file://../../../charts/_library"|' $(GAMES_DIR)/$(GAME)/chart/Chart.yaml
-	@rm -f $(GAMES_DIR)/$(GAME)/chart/Chart.lock $(GAMES_DIR)/$(GAME)/chart/charts/minato-games-library-*.tgz
-	@helm dependency build $(GAMES_DIR)/$(GAME)/chart || exit 1
 	helm unittest $(GAMES_DIR)/$(GAME)/chart
-	@sed -i 's|repository: "file://../../../charts/_library"|repository: "oci://harbor.7kgroup.com/minato-games/charts"|' $(GAMES_DIR)/$(GAME)/chart/Chart.yaml
-	@rm -f $(GAMES_DIR)/$(GAME)/chart/Chart.lock $(GAMES_DIR)/$(GAME)/chart/charts/minato-games-library-*.tgz
 
 .PHONY: template
 template: ## Render templates for all game charts.
@@ -80,10 +47,8 @@ template: ## Render templates for all game charts.
 	done
 
 .PHONY: package
-package: ## Package all charts.
+package: ## Package all game charts.
 	@mkdir -p dist
-	@echo "Packaging library chart..."
-	helm package $(CHARTS_DIR)/_library --destination dist/
 	@for game in $(GAMES); do \
 		if [ -d "$(GAMES_DIR)/$$game/chart" ]; then \
 			echo "Packaging $$game chart..."; \
