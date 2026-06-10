@@ -46,7 +46,7 @@ jobs:
         run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
       - name: Use local library dependency
         run: |
-          sed -i 's|repository: "oci://harbor.7kgroup.com/minato-games/charts"|repository: "file://../../../charts/_library"|' games/${{ matrix.game }}/chart/Chart.yaml
+          sed -i 's|repository: "oci://harbor.7kgroup.org/7kminato/charts"|repository: "file://../../../charts/_library"|' games/${{ matrix.game }}/chart/Chart.yaml
       - name: Remove packaged dependencies
         run: |
           rm -f games/${{ matrix.game }}/chart/Chart.lock

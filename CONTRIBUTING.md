@@ -31,7 +31,7 @@ Use the Minato Game Template in Backstage to scaffold a new game:
 - All charts must have unit tests
 - GameProfile names must be unique across the repository
 - Use the shared `_library` chart for common helpers
-- Library dependency must use OCI registry: `oci://harbor.7kgroup.com/minato-games/charts`
+- Library dependency must use OCI registry: `oci://harbor.7kgroup.org/7kminato/charts`
 - Agents must implement the Minato agent gRPC API
 - Agents should be built with `CGO_ENABLED=0` and run as non-root
 
