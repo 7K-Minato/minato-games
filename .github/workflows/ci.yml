@@ -18,7 +18,7 @@ jobs:
     outputs:
       games: ${{ steps.discover.outputs.games }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: discover
         run: |
           games=$(find games -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | jq -R -s -c 'split("\n")[:-1]')
@@ -32,9 +32,9 @@ jobs:
         game: ${{ fromJSON(needs.discover.outputs.games) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
         with:
           version: 'latest'
       - name: Install helm-unittest
@@ -53,9 +53,9 @@ jobs:
         game: ${{ fromJSON(needs.discover.outputs.games) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
       - name: Download Go modules
@@ -69,7 +69,7 @@ jobs:
       - name: Run tests
         run: go test ./games/${{ matrix.game }}/agent/...
       - name: Lint agent
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12
           working-directory: .
@@ -82,7 +82,7 @@ jobs:
         game: ${{ fromJSON(needs.discover.outputs.games) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup yq
         uses: frenck/action-setup-yq@v1
       - name: Validate GameProfile YAMLs
