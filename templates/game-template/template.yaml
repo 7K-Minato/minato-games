@@ -99,7 +99,7 @@ spec:
           title: Minato Agent Image
           type: string
           description: Minato agent sidecar image
-          default: harbor.7kgroup.com/7kminato/minato-agent-generic:v0.1.0
+          default: harbor.7kgroup.org/7kminato/minato-agent-generic:v0.1.0
 
         agentVersion:
           title: Agent Version

@@ -9,7 +9,7 @@ This profile configures a game-agnostic agent using YAML-declared actions.
 
 ## Agent
 
-- **Image**: `harbor.7kgroup.com/7kminato/minato-agent-generic:v0.1.0`
+- **Image**: `harbor.7kgroup.org/7kminato/minato-agent-generic:v0.1.0`
 - **Version**: `0.1.0`
 
 ## Configuration

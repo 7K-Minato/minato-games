@@ -43,7 +43,7 @@ game:
     mountPath: /palworld
 
   agent:
-    image: harbor.7kgroup.com/7kminato/minato-agent-palworld:v0.1.0
+    image: harbor.7kgroup.org/7kminato/minato-agent-palworld:v0.1.0
     version: "0.1.0"
     resources:
       requests:
