@@ -2,9 +2,6 @@ version: "2"
 
 run:
   timeout: 5m
-  exclude-dirs:
-    - templates
-    - "templates/.*"
 
 linters:
   default: none
@@ -14,3 +11,7 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+  exclusions:
+    paths:
+      - templates
+      - "templates/.*"
