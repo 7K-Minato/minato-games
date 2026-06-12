@@ -1,0 +1,35 @@
+{{- if .Values.gameServer.enabled }}
+apiVersion: operator.minato.io/v1
+kind: GameServer
+metadata:
+  name: {{ include "minato-games.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "minato-games.labels" . | nindent 4 }}
+spec:
+  profile: {{ include "minato-games.profileName" . }}
+  {{- if .Values.gameServer.tier }}
+  tier: {{ .Values.gameServer.tier }}
+  {{- end }}
+  env:
+    {{- range $key, $value := .Values.game.env }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- if .Values.gameServer.env }}
+    {{- range $key, $value := .Values.gameServer.env }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- end }}
+    {{- if .Values.security.rcon.existingSecret }}
+    RCON_PASSWORD: {{ .Values.security.rcon.existingSecret | quote }}
+    {{- else if .Values.security.rcon.password }}
+    RCON_PASSWORD: {{ .Values.security.rcon.password | quote }}
+    {{- end }}
+  {{- if .Values.game.storage.size }}
+  storage:
+    size: {{ .Values.game.storage.size }}
+    {{- if .Values.game.storage.storageClass }}
+    storageClass: {{ .Values.game.storage.storageClass }}
+    {{- end }}
+  {{- end }}
+{{- end }}
