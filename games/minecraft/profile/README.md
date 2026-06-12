@@ -11,7 +11,7 @@ This profile configures a Minecraft Paper server using the [itzg/minecraft-serve
 
 ## Agent
 
-- **Image**: `harbor.7kgroup.org/7kminato/minato-agent-minecraft:v0.1.0`
+- **Image**: `harbor.7kgroup.org/7kminato/minato-agent-minecraft:latest`
 - **RCON**: Enabled by default on port 25575
 - **Version**: 0.1.0
 

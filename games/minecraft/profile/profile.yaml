@@ -47,7 +47,7 @@ spec:
     mountPath: /data
     sizeDefault: 20Gi
   agent:
-    image: "harbor.7kgroup.org/7kminato/minato-agent-minecraft:v0.1.0"
+    image: "harbor.7kgroup.org/7kminato/minato-agent-minecraft:latest"
     version: "0.1.0"
   actions:
     - name: restart
