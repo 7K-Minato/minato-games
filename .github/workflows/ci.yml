@@ -18,7 +18,7 @@ jobs:
     outputs:
       games: ${{ steps.discover.outputs.games }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: discover
         run: |
           games=$(find games -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | jq -R -s -c 'split("\n")[:-1]')
@@ -32,7 +32,7 @@ jobs:
         game: ${{ fromJSON(needs.discover.outputs.games) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Helm
         uses: azure/setup-helm@v5
         with:
@@ -53,9 +53,9 @@ jobs:
         game: ${{ fromJSON(needs.discover.outputs.games) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: Download Go modules
@@ -82,7 +82,7 @@ jobs:
         game: ${{ fromJSON(needs.discover.outputs.games) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup yq
         uses: frenck/action-setup-yq@v1
       - name: Validate GameProfile YAMLs
