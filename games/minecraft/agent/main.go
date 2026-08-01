@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -52,20 +54,28 @@ func main() {
 		version: "0.1.0",
 	}
 
-	// Serve gRPC immediately; the game container takes a while to boot and
-	// open RCON, so connect in the background and retry until it answers.
-	// Actions received before RCON is up report "rcon not configured".
+	// Serve gRPC immediately; connect RCON in a background keepalive loop:
+	// the game container takes a while to boot, and restarts drop the
+	// connection, so redial whenever it is down. Actions received while RCON
+	// is unavailable report "rcon not configured".
 	if password != "" {
 		addr := fmt.Sprintf("%s:%s", host, port)
 		go func() {
-			for attempt := 1; ; attempt++ {
+			for {
+				if c := agent.rcon(); c != nil {
+					if _, err := c.Command(context.Background(), "list"); err == nil {
+						time.Sleep(5 * time.Second)
+						continue
+					}
+					agent.setRCON(nil)
+				}
 				c, err := rcon.NewMinecraftRCONClient(context.Background(), addr, password)
 				if err == nil {
 					agent.setRCON(c)
 					fmt.Println("connected to Minecraft RCON")
-					return
+					continue
 				}
-				fmt.Fprintf(os.Stderr, "waiting for Minecraft RCON (attempt %d): %v\n", attempt, err)
+				fmt.Fprintf(os.Stderr, "waiting for Minecraft RCON: %v\n", err)
 				time.Sleep(5 * time.Second)
 			}
 		}()
@@ -246,7 +256,13 @@ func (a *minecraftAgent) ExecuteAction(
 
 	output, err := a.rcon().Command(ctx, cmd)
 	if err != nil {
-		return &agentv1.ExecuteActionResponse{State: agentv1.ActionState_ACTION_STATE_FAILED, Error: err.Error()}, nil
+		// The server closes the RCON connection mid-response when it goes down
+		// as ordered; that is success, not failure.
+		if errors.Is(err, io.EOF) && (req.ActionName == "restart" || req.ActionName == "stop") {
+			output = "server is stopping"
+		} else {
+			return &agentv1.ExecuteActionResponse{State: agentv1.ActionState_ACTION_STATE_FAILED, Error: err.Error()}, nil
+		}
 	}
 
 	result, _ := anypb.New(&agentv1.ConsoleResponse{Response: output})
