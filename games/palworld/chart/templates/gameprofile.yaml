@@ -13,6 +13,9 @@ spec:
     - name: {{ .name }}
       containerPort: {{ .containerPort }}
       protocol: {{ .protocol }}
+      {{- if hasKey . "exposed" }}
+      exposed: {{ .exposed }}
+      {{- end }}
     {{- end }}
   environment:
     - key: PLAYERS

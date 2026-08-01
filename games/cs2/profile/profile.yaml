@@ -18,6 +18,7 @@ spec:
     - name: rcon
       containerPort: 27015
       protocol: TCP
+      exposed: false
     - name: tv
       containerPort: 27020
       protocol: UDP

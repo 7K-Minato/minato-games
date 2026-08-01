@@ -18,6 +18,7 @@ spec:
     - name: rcon
       containerPort: 25575
       protocol: TCP
+      exposed: false
   environment:
     - key: PUID
       default: "1000"

@@ -17,6 +17,7 @@ game:
     - name: rcon
       containerPort: 27015
       protocol: TCP
+      exposed: false
 
   env:
     SRCDS_TOKEN: ""
