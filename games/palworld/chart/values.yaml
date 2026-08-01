@@ -17,6 +17,7 @@ game:
     - name: rcon
       containerPort: 25575
       protocol: TCP
+      exposed: false
 
   env:
     PLAYERS: "32"

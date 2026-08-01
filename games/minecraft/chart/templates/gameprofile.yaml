@@ -13,6 +13,9 @@ spec:
     - name: {{ .name }}
       containerPort: {{ .containerPort }}
       protocol: {{ .protocol }}
+      {{- if hasKey . "exposed" }}
+      exposed: {{ .exposed }}
+      {{- end }}
     {{- end }}
   environment:
     - key: EULA
@@ -41,14 +44,9 @@ spec:
   storage:
     mountPath: {{ .Values.game.storage.mountPath | quote }}
     sizeDefault: {{ .Values.game.storage.size | quote }}
-    {{- if .Values.game.storage.storageClass }}
-    storageClassDefault: {{ .Values.game.storage.storageClass | quote }}
-    {{- end }}
   agent:
     image: {{ .Values.game.agent.image | quote }}
     version: {{ .Values.game.agent.version | quote }}
-    resources:
-      {{- toYaml .Values.game.agent.resources | nindent 6 }}
   actions:
     {{- range .Values.game.actions }}
     - name: {{ .name }}

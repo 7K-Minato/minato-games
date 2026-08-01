@@ -18,6 +18,7 @@ spec:
     - name: rcon
       containerPort: 27015
       protocol: TCP
+      exposed: false
     - name: tv
       containerPort: 27020
       protocol: UDP
@@ -106,6 +107,11 @@ spec:
       description: "End warmup immediately"
       concurrency: allow
       timeout: 30s
+  capabilities:
+    files: false
+    sftp: false
+    backup: false
+    restoreFromSnapshot: false
   observability:
     agentMetrics:
       port: 9090
@@ -113,8 +119,3 @@ spec:
     serviceMonitor:
       enabled: true
       interval: 30s
-    capabilities:
-      files: false
-      sftp: false
-      backup: false
-      restoreFromSnapshot: false

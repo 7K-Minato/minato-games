@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -15,9 +19,23 @@ import (
 )
 
 type minecraftAgent struct {
-	name       string
-	version    string
+	name    string
+	version string
+
+	mu         sync.RWMutex
 	rconClient rcon.Client
+}
+
+func (a *minecraftAgent) rcon() rcon.Client {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.rconClient
+}
+
+func (a *minecraftAgent) setRCON(c rcon.Client) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.rconClient = c
 }
 
 func main() {
@@ -31,21 +49,36 @@ func main() {
 	}
 	password := os.Getenv("RCON_PASSWORD")
 
-	var client rcon.Client
-	if password != "" {
-		addr := fmt.Sprintf("%s:%s", host, port)
-		var err error
-		client, err = rcon.NewMinecraftRCONClient(context.Background(), addr, password)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to connect to Minecraft RCON: %v\n", err)
-			os.Exit(1)
-		}
+	agent := &minecraftAgent{
+		name:    "minato-minecraft",
+		version: "0.1.0",
 	}
 
-	agent := &minecraftAgent{
-		name:       "minato-minecraft",
-		version:    "0.1.0",
-		rconClient: client,
+	// Serve gRPC immediately; connect RCON in a background keepalive loop:
+	// the game container takes a while to boot, and restarts drop the
+	// connection, so redial whenever it is down. Actions received while RCON
+	// is unavailable report "rcon not configured".
+	if password != "" {
+		addr := fmt.Sprintf("%s:%s", host, port)
+		go func() {
+			for {
+				if c := agent.rcon(); c != nil {
+					if _, err := c.Command(context.Background(), "list"); err == nil {
+						time.Sleep(5 * time.Second)
+						continue
+					}
+					agent.setRCON(nil)
+				}
+				c, err := rcon.NewMinecraftRCONClient(context.Background(), addr, password)
+				if err == nil {
+					agent.setRCON(c)
+					fmt.Println("connected to Minecraft RCON")
+					continue
+				}
+				fmt.Fprintf(os.Stderr, "waiting for Minecraft RCON: %v\n", err)
+				time.Sleep(5 * time.Second)
+			}
+		}()
 	}
 
 	_, err := server.Serve(agent, server.Options{})
@@ -124,11 +157,11 @@ func (a *minecraftAgent) Info(ctx context.Context, req *agentv1.InfoRequest) (*a
 }
 
 func (a *minecraftAgent) HealthCheck(ctx context.Context, req *agentv1.HealthRequest) (*agentv1.HealthResponse, error) {
-	if a.rconClient == nil {
+	if a.rcon() == nil {
 		return &agentv1.HealthResponse{Ready: true, Message: "no rcon configured"}, nil
 	}
 
-	_, err := a.rconClient.Command(ctx, "list")
+	_, err := a.rcon().Command(ctx, "list")
 	if err != nil {
 		return &agentv1.HealthResponse{Ready: false, Message: err.Error()}, nil
 	}
@@ -140,22 +173,22 @@ func (a *minecraftAgent) PrepareShutdown(
 	ctx context.Context,
 	req *agentv1.ShutdownRequest,
 ) (*agentv1.ShutdownResponse, error) {
-	if a.rconClient == nil {
+	if a.rcon() == nil {
 		return &agentv1.ShutdownResponse{Success: true}, nil
 	}
 
 	// Broadcast shutdown warning
 	if req.DrainReason != "" {
-		_, _ = a.rconClient.Command(ctx, fmt.Sprintf("say Server shutting down: %s", req.DrainReason))
+		_, _ = a.rcon().Command(ctx, fmt.Sprintf("say Server shutting down: %s", req.DrainReason))
 	} else {
-		_, _ = a.rconClient.Command(ctx, "say Server shutting down...")
+		_, _ = a.rcon().Command(ctx, "say Server shutting down...")
 	}
 
 	// Save the world
-	_, _ = a.rconClient.Command(ctx, "save-all")
+	_, _ = a.rcon().Command(ctx, "save-all")
 
 	// Stop the server
-	_, _ = a.rconClient.Command(ctx, "stop")
+	_, _ = a.rcon().Command(ctx, "stop")
 
 	return &agentv1.ShutdownResponse{Success: true}, nil
 }
@@ -164,11 +197,11 @@ func (a *minecraftAgent) GetPlayers(
 	ctx context.Context,
 	req *agentv1.PlayersRequest,
 ) (*agentv1.PlayersResponse, error) {
-	if a.rconClient == nil {
+	if a.rcon() == nil {
 		return &agentv1.PlayersResponse{Online: 0, Capacity: 20}, nil
 	}
 
-	output, err := a.rconClient.Command(ctx, "list")
+	output, err := a.rcon().Command(ctx, "list")
 	if err != nil {
 		return &agentv1.PlayersResponse{Online: 0, Capacity: 20}, nil
 	}
@@ -185,7 +218,7 @@ func (a *minecraftAgent) ExecuteAction(
 	ctx context.Context,
 	req *agentv1.ExecuteActionRequest,
 ) (*agentv1.ExecuteActionResponse, error) {
-	if a.rconClient == nil {
+	if a.rcon() == nil {
 		return &agentv1.ExecuteActionResponse{
 			State: agentv1.ActionState_ACTION_STATE_FAILED,
 			Error: "rcon not configured",
@@ -221,9 +254,15 @@ func (a *minecraftAgent) ExecuteAction(
 		return &agentv1.ExecuteActionResponse{State: agentv1.ActionState_ACTION_STATE_REJECTED, Error: "unknown action"}, nil
 	}
 
-	output, err := a.rconClient.Command(ctx, cmd)
+	output, err := a.rcon().Command(ctx, cmd)
 	if err != nil {
-		return &agentv1.ExecuteActionResponse{State: agentv1.ActionState_ACTION_STATE_FAILED, Error: err.Error()}, nil
+		// The server closes the RCON connection mid-response when it goes down
+		// as ordered; that is success, not failure.
+		if errors.Is(err, io.EOF) && (req.ActionName == "restart" || req.ActionName == "stop") {
+			output = "server is stopping"
+		} else {
+			return &agentv1.ExecuteActionResponse{State: agentv1.ActionState_ACTION_STATE_FAILED, Error: err.Error()}, nil
+		}
 	}
 
 	result, _ := anypb.New(&agentv1.ConsoleResponse{Response: output})
@@ -237,8 +276,8 @@ func (a *minecraftAgent) Console(stream agentv1.Agent_ConsoleServer) error {
 			return err
 		}
 
-		if a.rconClient != nil && msg.GetCommand() != nil {
-			output, err := a.rconClient.Command(stream.Context(), msg.GetCommand().RconCommand)
+		if a.rcon() != nil && msg.GetCommand() != nil {
+			output, err := a.rcon().Command(stream.Context(), msg.GetCommand().RconCommand)
 			if err != nil {
 				_ = stream.Send(&agentv1.ConsoleServerMessage{
 					Payload: &agentv1.ConsoleServerMessage_Error{Error: &agentv1.ConsoleError{Message: err.Error()}},
