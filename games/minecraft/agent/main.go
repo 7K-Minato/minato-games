@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -34,11 +35,16 @@ func main() {
 	var client rcon.Client
 	if password != "" {
 		addr := fmt.Sprintf("%s:%s", host, port)
-		var err error
-		client, err = rcon.NewMinecraftRCONClient(context.Background(), addr, password)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to connect to Minecraft RCON: %v\n", err)
-			os.Exit(1)
+		// The game container takes a while to boot and open RCON; retry until it
+		// answers instead of crash-looping the pod.
+		for attempt := 1; ; attempt++ {
+			c, err := rcon.NewMinecraftRCONClient(context.Background(), addr, password)
+			if err == nil {
+				client = c
+				break
+			}
+			fmt.Fprintf(os.Stderr, "waiting for Minecraft RCON (attempt %d): %v\n", attempt, err)
+			time.Sleep(5 * time.Second)
 		}
 	}
 
