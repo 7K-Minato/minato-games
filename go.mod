@@ -3,8 +3,8 @@ module github.com/7k-minato/minato-games
 go 1.26.4
 
 require (
-	github.com/7k-minato/minato v1.2.0
-	google.golang.org/protobuf v1.36.11
+	github.com/7k-minato/minato v1.3.0
+	google.golang.org/protobuf v1.36.12
 )
 
 require (
